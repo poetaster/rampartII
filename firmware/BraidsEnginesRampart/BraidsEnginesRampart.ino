@@ -33,15 +33,15 @@ PWMAudio DAC(PWMOUT);  // 16 bit PWM audio
 #include <MIDI.h>
 #include <Wire.h>
 
-using Transport = MIDI_NAMESPACE::SerialMIDI<SoftwareSerial>;
+//using Transport = MIDI_NAMESPACE::SerialMIDI<SoftwareSerial>;
 int rxPin = 1;
 int txPin = 0;
-SoftwareSerial mySerial = SoftwareSerial(rxPin, txPin); //thruActivated
-Transport serialMIDI(mySerial);
-MIDI_NAMESPACE::MidiInterface<Transport> MIDI((Transport&)serialMIDI);
+//SoftwareSerial mySerial = SoftwareSerial(rxPin, txPin); //thruActivated
+//Transport serialMIDI(mySerial);
+//MIDI_NAMESPACE::MidiInterface<Transport> MIDI((Transport&)serialMIDI);
 
 //MIDI_CREATE_INSTANCE(HardwareSerial, Serial, MIDI);
-
+MIDI_CREATE_DEFAULT_INSTANCE();
 
 // create ADSR envelope
 #include "ADSR.h"
@@ -165,15 +165,7 @@ int16_t avg_cv(int cv_in) {
 
 void setup() {
   Serial.begin(115200);
-  // this is the ADCs I2C
-  Wire.setSDA(12);
-  Wire.setSCL(13);
-  Wire.begin();
-  // start
-  adc.begin();
-  adc.setRate(860);
-  adc.setAutoGain(true);
-  
+ 
   // DISPLAY and TOF are on this bus
   Wire1.setSDA(oled_sda_pin);
   Wire1.setSCL(oled_scl_pin);
@@ -186,7 +178,9 @@ void setup() {
     Serial.println("Failed to detect and initialize sensor!");
     //while (1);
   }
-
+  sensor.setDistanceMode(VL53L1X::Long);
+  sensor.setMeasurementTimingBudget(50000);
+  sensor.startContinuous(50);
 
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
@@ -196,9 +190,15 @@ void setup() {
   display.display();
   displaySplash();
 
-  sensor.setDistanceMode(VL53L1X::Long);
-  sensor.setMeasurementTimingBudget(50000);
-  sensor.startContinuous(50);
+ // this is the ADCs I2C
+  Wire.setSDA(12);
+  Wire.setSCL(13);
+  Wire.setClock(100000); // use 100 kHz I2Ca
+  Wire.begin();
+  // start
+  adc.begin();
+  adc.setRate(860);
+  adc.setAutoGain(true);
 
   // set up Pico PWM audio output
   DAC.setBuffers(4, 32);  // DMA buffers
@@ -221,12 +221,12 @@ void setup() {
   pinMode(BUTTONR, INPUT);
   pinMode(encoderSW_pin, INPUT);
 
-  pinMode(26, POTA);
-  pinMode(27, POTC);
-  pinMode(28, POTC);
-  //pinMode(29, POTC);
+  pinMode(26, INPUT);  //pin block
+  pinMode(27, INPUT); //C
+  pinMode(28, INPUT); //B
+  pinMode(29, INPUT); //A
 
-  pinMode(LED_BUILTIN, OUTPUT);
+  //pinMode(LED_BUILTIN, OUTPUT);
 
   pinMode(23, OUTPUT); // thi is to switch to PWM for power to avoid ripple noise
   digitalWrite(23, HIGH);
@@ -252,7 +252,7 @@ void setup() {
   //MIDI.setHandleNoteOff(HandleNoteOff);  // Put only the name of the function
   //MIDI.begin(MIDI_CHANNEL_OMNI);
   allOff(); // all midi off
-  delay(1000);
+  //delay(1000);
 
 }
 
@@ -336,8 +336,11 @@ void updateControl() {
   morph_mod = (float)adc.voltage(2)/7.0f;
   decay_mod = (float)adc.readRaw(3); // raw audio input
   if (debug) {
-    Serial.print("audio ");
-    Serial.println(decay_mod);
+    Serial.print("timb ");
+    Serial.print(timb_mod);
+    Serial.print(" morph ");
+    Serial.println(morph_mod);
+    //Serial.println(decay_mod);
   }
 }
 

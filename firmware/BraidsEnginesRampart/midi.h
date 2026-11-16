@@ -54,7 +54,7 @@ void HandleNoteOn(byte channel, byte note, byte velocity) {
   }
   //carrier_freq = mtof(note);
   //envelope.noteOn();
-  digitalWrite(LED_BUILTIN, HIGH);
+  //digitalWrite(LED_BUILTIN, HIGH);
 }
 
 void aNoteOff( float note, int velocity) {
