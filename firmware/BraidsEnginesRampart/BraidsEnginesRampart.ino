@@ -23,6 +23,9 @@ bool debug = false;
 #define PWMOUT 11
 PWMAudio DAC(PWMOUT);  // 16 bit PWM audio
 
+// scales to play from frequency tables
+#include "scales.h"
+// midifunctions to create modal scales
 #include "Midier.h"
 
 // button inputs
@@ -33,15 +36,15 @@ PWMAudio DAC(PWMOUT);  // 16 bit PWM audio
 #include <MIDI.h>
 #include <Wire.h>
 
-//using Transport = MIDI_NAMESPACE::SerialMIDI<SoftwareSerial>;
+using Transport = MIDI_NAMESPACE::SerialMIDI<SoftwareSerial>;
 int rxPin = 1;
 int txPin = 0;
-//SoftwareSerial mySerial = SoftwareSerial(rxPin, txPin); //thruActivated
-//Transport serialMIDI(mySerial);
-//MIDI_NAMESPACE::MidiInterface<Transport> MIDI((Transport&)serialMIDI);
+SoftwareSerial mySerial = SoftwareSerial(rxPin, txPin); //thruActivated
+Transport serialMIDI(mySerial);
+MIDI_NAMESPACE::MidiInterface<Transport> MIDI((Transport&)serialMIDI);
 
 //MIDI_CREATE_INSTANCE(HardwareSerial, Serial, MIDI);
-MIDI_CREATE_DEFAULT_INSTANCE();
+//MIDI_CREATE_DEFAULT_INSTANCE();
 
 // create ADSR envelope
 #include "ADSR.h"
@@ -51,6 +54,8 @@ float envDecay;
 int envRelease;
 float envSustain;
 long envTimer = 0;
+
+
 
 // braids dsp
 
@@ -75,12 +80,32 @@ int pitch_in = 60;
 float global_volume = 0.9;
 int lastNote;
 
+// END Braids
+
 // midi related functions
 
 #include "midi.h"
 #include "braids.h"
 
-// END Braids
+// program switching ugh, todo
+int prog = 0;
+int bank = 0;
+int programs[] = { 7, 6, 6 , 10, 6, 7 };
+
+int pb1 = 0;
+int pb1total = 7;
+int pb2 = 0;
+int pb2total = 6;
+int pb3 = 0;
+int pb3total = 6;
+int pb4 = 0;
+int pb4total = 10;
+int pb5 = 0;
+int pb5total = 6;
+int pb6 = 0;
+int pb6total = 7;
+int numProg = 41;
+int numBank = 6;
 
 // GPIO, pots
 const int POTA = 29; // set the analog input for fm_intensity
@@ -164,13 +189,13 @@ int16_t avg_cv(int cv_in) {
 }
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(31250);
  
   // DISPLAY and TOF are on this bus
   Wire1.setSDA(oled_sda_pin);
   Wire1.setSCL(oled_scl_pin);
   Wire1.begin();
-  Wire1.setClock(400000); // use 400 kHz I2Ca
+  //Wire1.setClock(400000); // use 400 kHz I2Ca
 
   sensor.setTimeout(500);
   if (!sensor.init())
@@ -178,9 +203,9 @@ void setup() {
     Serial.println("Failed to detect and initialize sensor!");
     //while (1);
   }
-  sensor.setDistanceMode(VL53L1X::Long);
-  sensor.setMeasurementTimingBudget(50000);
-  sensor.startContinuous(50);
+  sensor.setDistanceMode(VL53L1X::Short);
+  sensor.setMeasurementTimingBudget(20000);
+  sensor.startContinuous(30);
 
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
@@ -193,7 +218,7 @@ void setup() {
  // this is the ADCs I2C
   Wire.setSDA(12);
   Wire.setSCL(13);
-  Wire.setClock(100000); // use 100 kHz I2Ca
+  //Wire.setClock(100000); // use 100 kHz I2Ca
   Wire.begin();
   // start
   adc.begin();
@@ -275,13 +300,16 @@ void updateControl() {
   CONSTRAIN(timbre_in, 0.0f, 1.0f);
 
   // current TOF distance measure
-  sensor.read();
-  int currentDistance = sensor.ranging_data.range_mm;
-  int currentRange = map(currentDistance, 10, 1000, 21, 0); // distance from tofaa
+  int currentDistance = sensor.readSingle();
+  //int currentDistance = sensor.ranging_data.range_mm;
+  int currentRange = map(currentDistance, 5, 600, 21, 0); // distance from tof
   if (currentRange > 0) {
     if (debug) Serial.print("range: ");
     if (debug) Serial.println(currentRange);
-    int newNote = currentMode[currentRange];
+
+    // we get the note from updatescale which also switches program bank and scale
+    // updateScale also deals with the button left/right changes to bank and progam
+    int newNote = updateScale(currentRange);
 
     if (newNote != pitch_in && newNote < 121) {
       lastNote = pitch_in;
@@ -291,44 +319,11 @@ void updateControl() {
       aNoteOn( pitch_in, 100); // don't need this
     }
   }
-  if (currentDistance > 1100 && currentDistance < 1400) {
+  if (currentDistance > 1000 && currentDistance < 1400) {
     if (! debug) allOff();
     env->gate(false);
   }
   if (trigger_in == 0) aNoteOff(lastNote,0);
-
-  if (BUTTONL) { }
-
-  if (digitalRead(BUTTONR)== 1) {
-    modeIndex = modeIndex + 1;
-    if (modeIndex == 8 ) modeIndex = 0;
-    if (debug) Serial.print("mode: ");
-    if (debug) Serial.println(modeIndex);
-    switch (modeIndex) {
-      case 0:
-        mode = midier::Mode::Ionian;
-        break;
-      case 1:
-        mode = midier::Mode::Dorian;
-        break;
-      case 2:
-        mode = midier::Mode::Phrygian;
-        break;
-      case 3:
-        mode = midier::Mode::Lydian;
-        break;
-      case 4:
-        mode = midier::Mode::Mixolydian;
-        break;
-      case 5:
-        mode = midier::Mode::Aeolian;
-        break;
-      case 6:
-        mode = midier::Mode::Locrian;
-        break;
-    }
-    makeScale( roots[scaleRoot], mode);
-  }
 
   // finally, collect adc inputs
   fm_mod =   (float)adc.voltage(0)/7.0f; // 7 is at a 1.2k to ground
@@ -342,6 +337,207 @@ void updateControl() {
     Serial.println(morph_mod);
     //Serial.println(decay_mod);
   }
+
+}
+
+// Handle program bank and scale type switching for control update function
+
+int updateScale(int interval) {
+
+  // switch program bank
+  if (digitalRead(BUTTONL) ==1) {
+    bank = bank + 1;
+    if (bank == 6 ) bank = 0;
+  }
+  // switch scale within program bank
+
+  int midiNote;
+
+  if (digitalRead(BUTTONR) == 1) {
+    switch (bank) {
+      case 0:
+        pb1++;
+        if (pb1 % pb1total !=0) pb1 = 0;
+        break;
+      case 1:
+        pb2++;
+        if (pb2 % pb2total !=0) pb2 = 0;
+        break;
+      case 2:
+        pb3++;
+        if (pb3 % pb3total !=0) pb3 = 0;
+        break;
+      case 3:
+        pb4++;
+        if (pb4 % pb4total !=0) pb4 = 0;
+        break;
+      case 4:
+        pb5++;
+        if (pb5 % pb5total !=0) pb5 = 0;
+        break;
+      case 5:
+        pb6++;
+        if (pb6 % pb6total !=0) pb6 = 0;
+        break;
+    }
+
+  }
+  switch (bank) {
+      case 0:
+        switch (pb1) {
+          case 0:
+            mode = midier::Mode::Ionian;
+            break;
+          case 1:
+            mode = midier::Mode::Dorian;
+            break;
+          case 2:
+            mode = midier::Mode::Phrygian;
+            break;
+          case 3:
+            mode = midier::Mode::Lydian;
+            break;
+          case 4:
+            mode = midier::Mode::Mixolydian;
+            break;
+          case 5:
+            mode = midier::Mode::Aeolian;
+            break;
+          case 6:
+            mode = midier::Mode::Locrian;
+            break;
+        }
+        makeScale( roots[scaleRoot], mode);
+        return currentMode[interval];
+        break;
+      case 1:
+        switch (pb2) {
+          case 0:
+            midiNote =frequency_to_midi_note(pgm_read_float( &Nahawand[interval ]));
+            break;
+          case 1:
+            midiNote = frequency_to_midi_note(pgm_read_float( &Bayati[interval ]));
+            break;
+          case 2:
+            midiNote = frequency_to_midi_note(pgm_read_float( &NawaAthar[interval]));
+            break;
+          case 3:
+            midiNote =frequency_to_midi_note( pgm_read_float( &Farafahza[interval ]));
+            break;
+          case 4:
+            midiNote = frequency_to_midi_note(pgm_read_float( &Nikriz[interval ]));
+            break;
+          case 5:
+            midiNote = frequency_to_midi_note(pgm_read_float( &Bhairav[interval ]));
+            break;
+        }
+        break;
+      case 2:
+        switch (pb3) {
+          case 0:
+            midiNote = frequency_to_midi_note(pgm_read_float( &Suznak[interval ]));
+            break;
+          case 1:
+            midiNote = frequency_to_midi_note(pgm_read_float( &Zamzam[interval ]));
+            break;
+          case 2:
+            midiNote = frequency_to_midi_note(pgm_read_float( &KijazKarKurd[interval ]));
+            break;
+          case 3:
+            midiNote = frequency_to_midi_note(pgm_read_float( &RomanianMinor[interval ]));
+            break;
+          case 4:
+            midiNote = frequency_to_midi_note(pgm_read_float( &Enigmatic[interval ]));
+            break;
+          case 5:
+            midiNote = frequency_to_midi_note(pgm_read_float( &Partch1[interval ]));
+            break;
+        }
+        break;
+      case 3:
+        switch (pb4) {
+          case 0:
+            midiNote = frequency_to_midi_note(pgm_read_float( &Pelog[interval ]));
+            break;
+          case 1:
+            midiNote = frequency_to_midi_note(pgm_read_float( &Zhi[interval ]));
+            break;
+          case 2:
+            midiNote = frequency_to_midi_note(pgm_read_float( &Yu[interval ]));
+            break;
+          case 3:
+            midiNote = frequency_to_midi_note(pgm_read_float( &MajPent[interval ]));
+            break;
+          case 4:
+            midiNote = frequency_to_midi_note(pgm_read_float( &Kumoi[interval ]));
+            break;
+          case 5:
+            midiNote = frequency_to_midi_note(pgm_read_float( &Jiao[interval ]));
+            break;
+          case 6:
+            midiNote = frequency_to_midi_note(pgm_read_float( &Prometheus[interval ]));
+            break;
+          case 7:
+            midiNote = frequency_to_midi_note(pgm_read_float( &Chinese[interval ]));
+            break;
+          case 8:
+            midiNote = frequency_to_midi_note(pgm_read_float( &Gong[interval ]));
+            break;
+          case 9:
+            midiNote = frequency_to_midi_note(pgm_read_float( &Egypt[interval ]));
+            break;
+        }
+        break;
+      case 4:
+        switch (pb5) {
+          case 0:
+            midiNote = frequency_to_midi_note(pgm_read_float( &MajorPentatonic[interval ]));
+            break;
+          case 1:
+            midiNote = frequency_to_midi_note(pgm_read_float( &RomanMinor[interval ]));
+            break;
+          case 2:
+            midiNote = frequency_to_midi_note(pgm_read_float( &NeapolitanMinor[interval ]));
+            break;
+          case 3:
+            midiNote = frequency_to_midi_note(pgm_read_float( &MelodicMinor[interval ]));
+            break;
+          case 4:
+            midiNote = frequency_to_midi_note(pgm_read_float( &Spanish[interval ]));
+            break;
+          case 5:
+            midiNote = frequency_to_midi_note(pgm_read_float( &LydianMinor[interval ]));
+            break;
+        }
+        break;
+      case 5:
+        switch (pb6) {
+          case 0:
+            midiNote = frequency_to_midi_note(pgm_read_float( &HexDorian[interval ]));
+            break;
+          case 1:
+            midiNote = frequency_to_midi_note(pgm_read_float( &HexAeolian[interval ]));
+            break;
+          case 2:
+            midiNote = frequency_to_midi_note(pgm_read_float( &HexSus[interval ]));
+            break;
+          case 3:
+            midiNote = frequency_to_midi_note(pgm_read_float( &HexPhrygian[interval ]));
+            break;
+          case 4:
+            midiNote = frequency_to_midi_note(pgm_read_float( &HexMaj6[interval ]));
+            break;
+          case 5:
+            midiNote = frequency_to_midi_note(pgm_read_float( &HexMaj7[interval ]));
+            break;
+          case 6:
+            midiNote = frequency_to_midi_note(pgm_read_float( &PhrygianFreq[interval ]));
+            break;
+        }
+        break;
+    }
+  // for all but the western modes, retrun note here
+  return midiNote;
 }
 
 void loop() {

@@ -72,3 +72,18 @@ void aNoteOn(float note, int velocity) {
   // env->gate(true);
   //digitalWrite(LED, HIGH);
 }
+
+/*
+  Converts a note frequency to the closest corresponding MIDI
+  note number.
+  Adapted from https://gist.github.com/francoisgeorgy/d155f4aa5e8bd767504c2b43e1ba2902
+*/
+static const uint32_t midi_note_at_zero_volts = 12;
+static const float semitones_per_octave = 12.0f;
+static const float volts_per_semitone = 1.0f / semitones_per_octave;
+static const float a4_frequency = 440.0f;
+static const uint32_t a4_midi_note = 69;
+uint32_t frequency_to_midi_note(float frequency) {
+  float note = 69.0f + logf(frequency / a4_frequency) / logf(2.0f) * semitones_per_octave;
+  return ceil(note);
+}
