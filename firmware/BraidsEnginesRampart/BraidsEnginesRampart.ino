@@ -9,7 +9,7 @@
    Copyright (c)  2020 (emilie.o.gillet@gmail.com)
 */
 
-bool debug = false;
+bool debug = true;
 
 #include <Arduino.h>
 #include "stdio.h"
@@ -281,6 +281,8 @@ void setup() {
 
 }
 
+uint32_t buttonL_debounce = 0;
+uint32_t buttonR_debounce = 0;
 
 void updateControl() {
 
@@ -293,7 +295,54 @@ void updateControl() {
   int p1 = potvalue[0]; //analogRead(POTA); // value is 0-4065
   int p2 = potvalue[1]; // analogRead(POTC); // value is 0-4065
 
+  // button reads for bank and program changes
+  if (digitalRead(BUTTONL) ==1) {
+    if ( now - buttonL_debounce > 250 ) {
+     bank = bank + 1;
+     if (bank == 6 ) bank = 0;
+     if (debug) {
+       Serial.print("bank ");
+       Serial.println(bank);
+     }
+    }
+    buttonL_debounce = now;
+  }
 
+  if (digitalRead(BUTTONR) == 1) {
+    if ( now - buttonR_debounce > 250 ) {
+    switch (bank) {
+      case 0:
+        pb1 = pb1 + 1;
+        if (pb1 == pb1total ) pb1 = 0;
+        break;
+      case 1:
+        pb2 = pb2 + 1;
+        if (pb2 == pb2total) pb2 = 0;
+        Serial.print("prog ");
+        Serial.println(pb2);
+        break;
+      case 2:
+        pb3 = pb3 + 1;
+        if (pb3 == pb3total ) pb3 = 0;
+        break;
+      case 3:
+        pb4 = pb4 + 1;
+        if (pb4 == pb4total ) pb4 = 0;
+        break;
+      case 4:
+        pb5 = pb5 + 1;
+        if (pb5 == pb5total ) pb5 = 0;
+        break;
+      case 5:
+        pb6 = pb6 + 1;
+        if (pb6 == pb6total ) pb6 = 0;
+        break;
+    }
+    }
+    buttonR_debounce = now;
+  }
+
+ // pot reads a b c 
   morph_in = (float)p1 / 4095.0f; //map(p1, 0, 4065, 0.0, 1.0); // IN(2);
   timbre_in = (float)p2 / 4095.0f; //map(p2, 0, 4065, 0.0, 1.0); //IN(3);
   CONSTRAIN(morph_in, 0.0f, 1.0f);
@@ -331,10 +380,10 @@ void updateControl() {
   morph_mod = (float)adc.voltage(2)/7.0f;
   decay_mod = (float)adc.readRaw(3); // raw audio input
   if (debug) {
-    Serial.print("timb ");
-    Serial.print(timb_mod);
-    Serial.print(" morph ");
-    Serial.println(morph_mod);
+  //  Serial.print("timb ");
+  //  Serial.print(timb_mod);
+  //  Serial.print(" morph ");
+  //  Serial.println(morph_mod);
     //Serial.println(decay_mod);
   }
 
@@ -344,44 +393,8 @@ void updateControl() {
 
 int updateScale(int interval) {
 
-  // switch program bank
-  if (digitalRead(BUTTONL) ==1) {
-    bank = bank + 1;
-    if (bank == 6 ) bank = 0;
-  }
   // switch scale within program bank
-
   int midiNote;
-
-  if (digitalRead(BUTTONR) == 1) {
-    switch (bank) {
-      case 0:
-        pb1++;
-        if (pb1 % pb1total !=0) pb1 = 0;
-        break;
-      case 1:
-        pb2++;
-        if (pb2 % pb2total !=0) pb2 = 0;
-        break;
-      case 2:
-        pb3++;
-        if (pb3 % pb3total !=0) pb3 = 0;
-        break;
-      case 3:
-        pb4++;
-        if (pb4 % pb4total !=0) pb4 = 0;
-        break;
-      case 4:
-        pb5++;
-        if (pb5 % pb5total !=0) pb5 = 0;
-        break;
-      case 5:
-        pb6++;
-        if (pb6 % pb6total !=0) pb6 = 0;
-        break;
-    }
-
-  }
   switch (bank) {
       case 0:
         switch (pb1) {
