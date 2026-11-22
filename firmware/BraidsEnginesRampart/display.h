@@ -93,7 +93,7 @@ void displayADSR() {
   display.setCursor(line_2_3.x, line_2_3.y);
   display.print("S");
   drawCircle( envSustain * 100, line_2_3.x + 16, line_2_3.y ); //  timbre
-  
+
   // release
   display.setCursor(line_3_3.x, line_3_3.y);
   display.print("R: ");
@@ -101,6 +101,7 @@ void displayADSR() {
 
   display.display();
 }
+
 /* braids */
 void displayBraids() {
   display.clearDisplay();

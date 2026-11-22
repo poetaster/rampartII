@@ -55,8 +55,6 @@ int envRelease;
 float envSustain;
 long envTimer = 0;
 
-
-
 // braids dsp
 
 #include <STMLIB.h>
@@ -295,19 +293,19 @@ void updateControl() {
   int p1 = potvalue[0]; //analogRead(POTA); // value is 0-4065
   int p2 = potvalue[1]; // analogRead(POTC); // value is 0-4065
 
-  // button reads for bank and program changes
+  // button reads for bank changes
   if (digitalRead(BUTTONL) ==1) {
     if ( now - buttonL_debounce > 250 ) {
      bank = bank + 1;
      if (bank == 6 ) bank = 0;
      if (debug) {
-       Serial.print("bank ");
-       Serial.println(bank);
      }
     }
     buttonL_debounce = now;
   }
 
+  // button reads for program changes
+  // banks may have different totals
   if (digitalRead(BUTTONR) == 1) {
     if ( now - buttonR_debounce > 250 ) {
     switch (bank) {
@@ -318,8 +316,6 @@ void updateControl() {
       case 1:
         pb2 = pb2 + 1;
         if (pb2 == pb2total) pb2 = 0;
-        Serial.print("prog ");
-        Serial.println(pb2);
         break;
       case 2:
         pb3 = pb3 + 1;
@@ -351,13 +347,19 @@ void updateControl() {
   // current TOF distance measure
   int currentDistance = sensor.readSingle();
   //int currentDistance = sensor.ranging_data.range_mm;
-  int currentRange = map(currentDistance, 5, 600, 21, 0); // distance from tof
+
+  // the pentatonics are limited to 20 tones
+  int top = 21;
+  if (bank == 3) top = 19;
+
+  int currentRange = map(currentDistance, 10, 650, top, 0); // distance from tof
+
   if (currentRange > 0) {
     if (debug) Serial.print("range: ");
     if (debug) Serial.println(currentRange);
 
-    // we get the note from updatescale which also switches program bank and scale
-    // updateScale also deals with the button left/right changes to bank and progam
+    // we get the note from updatescale which 
+    // does a lookup or calculation in the case of the traditional modes
     int newNote = updateScale(currentRange);
 
     if (newNote != pitch_in && newNote < 121) {
@@ -368,7 +370,7 @@ void updateControl() {
       aNoteOn( pitch_in, 100); // don't need this
     }
   }
-  if (currentDistance > 1000 && currentDistance < 1400) {
+  if (currentDistance > 900 && currentDistance < 1400) {
     if (! debug) allOff();
     env->gate(false);
   }

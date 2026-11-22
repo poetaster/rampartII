@@ -38,7 +38,7 @@ uint16_t readpot(uint8_t potnum) {
       input = POTB;
       break;
   }
-  
+
   // read the A/D a few times and average for a more stable value
   for (int j = 0; j < POT_AVERAGING; ++j) val +=  analogRead(input);
 
