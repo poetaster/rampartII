@@ -12,8 +12,6 @@ int main() {
     const std::vector<std::string> v(list, list + len);
     std::copy(v.begin(), v.end(), std::ostream_iterator<std::string>(std::cout, "\n"));
 }*/
-  
-  
 const char* const oscnames[] = {
 "CSAW",
 "MORPH",

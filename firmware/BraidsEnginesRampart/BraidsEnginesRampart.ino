@@ -189,8 +189,8 @@ void setup() {
     Serial.println("Failed to detect and initialize sensor!");
     //while (1);
   }
-  sensor.setDistanceMode(VL53L1X::Short);
-  sensor.setMeasurementTimingBudget(20000);
+  sensor.setDistanceMode(VL53L1X::Medium);
+  //sensor.setMeasurementTimingBudget(20000);
   sensor.startContinuous(30);
 
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
@@ -270,6 +270,8 @@ void setup() {
 uint32_t buttonL_debounce = 0;
 uint32_t buttonR_debounce = 0;
 
+
+// handle button input and TOF -> note value and adc input
 void updateControl() {
 
   //MIDI.read();
@@ -277,9 +279,6 @@ void updateControl() {
   uint32_t now = millis();
   bool anybuttonpressed;
   anybuttonpressed = false;
-
-  int p1 = potvalue[0]; //analogRead(POTA); // value is 0-4065
-  int p2 = potvalue[1]; // analogRead(POTC); // value is 0-4065
 
   // button reads for bank changes
   if (digitalRead(BUTTONL) ==1) {
@@ -302,12 +301,6 @@ void updateControl() {
     }
     buttonR_debounce = now;
   }
-
- // pot reads a b c 
-  morph_in = (float)p1 / 4095.0f; //map(p1, 0, 4065, 0.0, 1.0); // IN(2);
-  timbre_in = (float)p2 / 4095.0f; //map(p2, 0, 4065, 0.0, 1.0); //IN(3);
-  CONSTRAIN(morph_in, 0.0f, 1.0f);
-  CONSTRAIN(timbre_in, 0.0f, 1.0f);
 
   // current TOF distance measure
   int currentDistance = sensor.readSingle();
@@ -545,13 +538,13 @@ int engineInc = 0;
 // second core deals with ui / control rate updates
 void loop1() {
 
-  updateControl(); //pots values on this loop since the other delays
+  updateControl(); //buttons, adc and TOF input
+
 
   uint32_t now = millis();
   bool anybuttonpressed;
   anybuttonpressed = false;
 
-  // UI handlers
   // first encoder
   encoder.tick();
 
@@ -567,20 +560,15 @@ void loop1() {
 
   }
 
-
   // now, after buttons check if only encoder moved and no buttons
-  // this is broken by mozzi, sigh.
   if (! anybuttonpressed && encoder_delta) {
     //float turn = encoder_delta * 0.01f;
     //harm_in = harm_in + turn;
 
   }
-
-
   /// only set new pos last after buttons have had a chance to use the delta
   encoder_pos_last = encoder_pos;
   encoder_delta = 0;  // we've used it
-
   // start tracking time encoder button held
   if ( ! digitalRead( encoderSW_pin ) ) {
     encoder_push_millis = now;
@@ -589,6 +577,7 @@ void loop1() {
     encoder_held = false;
   }
 
+  // this is all wrong :)
   // lock pot settings when no keys are pressed so it requires more movement to change value
   // this is so when we change tracks we don't immediately change the settings on the new track
   if (!anybuttonpressed) lockpots();
@@ -600,6 +589,16 @@ void loop1() {
     readpot(3);
     pot_timer = now;
   }
+  int p1 = potvalue[0]; //analogRead(POTA); // value is 0-4065
+  int p2 = potvalue[1]; // analogRead(POTC); // value is 0-4065
+
+  // pot reads a b c 
+  morph_in = (float)p1 / 4095.0f; //map(p1, 0, 4065, 0.0, 1.0); // IN(2);
+  timbre_in = (float)p2 / 4095.0f; //map(p2, 0, 4065, 0.0, 1.0); //IN(3);
+  CONSTRAIN(morph_in, 0.0f, 1.0f);
+  CONSTRAIN(timbre_in, 0.0f, 1.0f);
+
+
 
   displayBraids();
 
