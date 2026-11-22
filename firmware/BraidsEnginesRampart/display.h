@@ -1,5 +1,16 @@
 // display functions/defines
 
+extern int bank;
+extern int engine_in;
+extern int programs[];
+extern float global_volume;
+extern float morph_in;
+extern float timbre_in;
+extern float envAttack;
+extern float envDecay;
+extern float envSustain;
+extern int envRelease;
+
 #define DISPLAY_TIME 2000 // time in ms to display numbers on LEDS
 
 enum {
@@ -45,10 +56,10 @@ const pos_t line_1_2  = {.x = 36, .y = 8, .str = "trs:%+2d" };
 const pos_t line_1_3  = {.x = 100, .y = 8, .str = "seq:%d" };
 const pos_t line_2_1    = {.x = 0,  .y = 22, .str = "" };
 const pos_t line_2_2   = {.x = 36, .y = 22, .str = "" };
-const pos_t line_2_3   = {.x = 72, .y = 22, .str = "" };
-const pos_t line_3_1 = { .x = 0, .y = 27,  .str = "" };
-const pos_t line_3_2 = { .x = 36, .y = 27, .str = "" };
-const pos_t line_3_3 = { .x = 100, .y = 27,  .str = "" };
+const pos_t line_2_3   = {.x = 100, .y = 22, .str = "" };
+const pos_t line_3_1 = { .x = 0, .y = 30,  .str = "" };
+const pos_t line_3_2 = { .x = 28, .y = 30, .str = "" };
+const pos_t line_3_3 = { .x = 100, .y = 30,  .str = "" };
 
 const pos_t oct_text_offset = { .x = 3, .y = 10,  .str = "" };
 const pos_t gate_bar_offset = { .x = 0, .y = -15, .str = "" };
@@ -104,6 +115,7 @@ void displayADSR() {
 
 /* braids */
 void displayBraids() {
+  
   display.clearDisplay();
   display.setFont(&myfont);
   // // name
@@ -133,6 +145,8 @@ void displayBraids() {
   //display.setCursor(line_2_3.x, line_2_3.y);
   //display.print("m: ");
   //display.print(display_mode);
+  display.setCursor(line_3_2.x, line_3_2.y);
+  display.print(scaleNames[bank][programs[bank]]);
 
   updateGauges();
   display.display();

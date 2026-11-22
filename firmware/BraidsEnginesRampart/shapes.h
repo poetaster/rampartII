@@ -63,3 +63,23 @@ const char* const oscnames[] = {
 "PARTICLE_NOISE",
   };
  const size_t nameslength = sizeof(oscnames) / sizeof(oscnames[0]);
+
+// Scale names per bank
+const char* const scaleNamesBank0[] = {"Ionian", "Dorian", "Phrygian", "Lydian", "Mixolydian", "Aeolian", "Locrian"};
+const char* const scaleNamesBank1[] = {"Nahawand", "Bayati", "NawaAthar", "Farafahza", "Nikriz", "Bhairav"};
+const char* const scaleNamesBank2[] = {"Suznak", "Zamzam", "KijazKarKurd", "RomanianMinor", "Enigmatic", "Partch1"};
+const char* const scaleNamesBank3[] = {"Pelog", "Zhi", "Yu", "MajPent", "Kumoi", "Jiao", "Prometheus", "Chinese", "Gong", "Egypt"};
+const char* const scaleNamesBank4[] = {"MajorPentatonic", "RomanMinor", "NeapolitanMinor", "MelodicMinor", "Spanish", "LydianMinor"};
+const char* const scaleNamesBank5[] = {"HexDorian", "HexAeolian", "HexSus", "HexPhrygian", "HexMaj6", "HexMaj7", "PhrygianFreq"};
+
+const char* const* const scaleNames[] = {
+  scaleNamesBank0,
+  scaleNamesBank1,
+  scaleNamesBank2,
+  scaleNamesBank3,
+  scaleNamesBank4,
+  scaleNamesBank5
+};
+
+const uint8_t scaleNamesLengths[] = {7, 6, 6, 10, 6, 7};
+const uint8_t numScaleBanks = 6;

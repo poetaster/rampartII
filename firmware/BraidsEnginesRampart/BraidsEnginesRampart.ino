@@ -88,20 +88,8 @@ int lastNote;
 // program switching ugh, todo
 int prog = 0;
 int bank = 0;
-int programs[] = { 7, 6, 6 , 10, 6, 7 };
-
-int pb1 = 0;
-int pb1total = 7;
-int pb2 = 0;
-int pb2total = 6;
-int pb3 = 0;
-int pb3total = 6;
-int pb4 = 0;
-int pb4total = 10;
-int pb5 = 0;
-int pb5total = 6;
-int pb6 = 0;
-int pb6total = 7;
+int programs[] = {0, 0, 0, 0, 0, 0};
+const int programTotals[] = {7, 6, 6, 10, 6, 7};
 int numProg = 41;
 int numBank = 6;
 
@@ -305,35 +293,12 @@ void updateControl() {
   }
 
   // button reads for program changes
-  // banks may have different totals
   if (digitalRead(BUTTONR) == 1) {
     if ( now - buttonR_debounce > 250 ) {
-    switch (bank) {
-      case 0:
-        pb1 = pb1 + 1;
-        if (pb1 == pb1total ) pb1 = 0;
-        break;
-      case 1:
-        pb2 = pb2 + 1;
-        if (pb2 == pb2total) pb2 = 0;
-        break;
-      case 2:
-        pb3 = pb3 + 1;
-        if (pb3 == pb3total ) pb3 = 0;
-        break;
-      case 3:
-        pb4 = pb4 + 1;
-        if (pb4 == pb4total ) pb4 = 0;
-        break;
-      case 4:
-        pb5 = pb5 + 1;
-        if (pb5 == pb5total ) pb5 = 0;
-        break;
-      case 5:
-        pb6 = pb6 + 1;
-        if (pb6 == pb6total ) pb6 = 0;
-        break;
-    }
+      if (bank >= 0 && bank < numBank) {
+        programs[bank]++;
+        if (programs[bank] == programTotals[bank]) programs[bank] = 0;
+      }
     }
     buttonR_debounce = now;
   }
@@ -397,9 +362,10 @@ int updateScale(int interval) {
 
   // switch scale within program bank
   int midiNote;
+  int currentProg = programs[bank];
   switch (bank) {
       case 0:
-        switch (pb1) {
+        switch (currentProg) {
           case 0:
             mode = midier::Mode::Ionian;
             break;
@@ -426,7 +392,7 @@ int updateScale(int interval) {
         return currentMode[interval];
         break;
       case 1:
-        switch (pb2) {
+        switch (currentProg) {
           case 0:
             midiNote =frequency_to_midi_note(pgm_read_float( &Nahawand[interval ]));
             break;
@@ -448,7 +414,7 @@ int updateScale(int interval) {
         }
         break;
       case 2:
-        switch (pb3) {
+        switch (currentProg) {
           case 0:
             midiNote = frequency_to_midi_note(pgm_read_float( &Suznak[interval ]));
             break;
@@ -470,7 +436,7 @@ int updateScale(int interval) {
         }
         break;
       case 3:
-        switch (pb4) {
+        switch (currentProg) {
           case 0:
             midiNote = frequency_to_midi_note(pgm_read_float( &Pelog[interval ]));
             break;
@@ -504,7 +470,7 @@ int updateScale(int interval) {
         }
         break;
       case 4:
-        switch (pb5) {
+        switch (currentProg) {
           case 0:
             midiNote = frequency_to_midi_note(pgm_read_float( &MajorPentatonic[interval ]));
             break;
@@ -526,7 +492,7 @@ int updateScale(int interval) {
         }
         break;
       case 5:
-        switch (pb6) {
+        switch (currentProg) {
           case 0:
             midiNote = frequency_to_midi_note(pgm_read_float( &HexDorian[interval ]));
             break;
