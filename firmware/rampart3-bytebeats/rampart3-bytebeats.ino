@@ -216,7 +216,7 @@ void updateControl() {
   if (buttonE.pressed()) {
    encoder_push_millis = now;
    currentBank = currentBank + 1;
-   if (currentBank > 3) currentBank = 1;
+   if (currentBank > 2) currentBank = 0;
    if (debug) {
      Serial.print("bank: ");
      Serial.println(currentBank );
