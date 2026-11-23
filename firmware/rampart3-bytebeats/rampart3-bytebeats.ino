@@ -28,11 +28,11 @@ const unsigned int TOP = 0x07FF; // 11-bit resolution.  7812 Hz PWM
 uint16_t potvalue[3]; // pot readings
 uint16_t lastpotvalue[3]; // old pot readings
 #define POT_SAMPLE_TIME 30 // delay time between pot reads
-#define MIN_POT_CHANGE 25 // locked pot reading must change by this in order to register
-#define MIN_COUNTS 20  // unlocked pot must change by this in order to register
+#define MIN_POT_CHANGE 15 // locked pot reading must change by this in order to register
+#define MIN_COUNTS 5  // unlocked pot must change by this in order to register
 #define POT_AVERAGING 3 // analog sample averaging count 
 #define POT_MIN 4   // A/D may not read min value of 0 so use a bit larger value for map() function
-#define POT_MAX 4096 // A/D may not read max value of 1023 so use a bit smaller value for map() function
+#define POT_MAX 1023 // A/D may not read max value of 1023 so use a bit smaller value for map() function
 
 #define LEDPIN   13 // usually 13
 
@@ -168,13 +168,13 @@ void setup() {
 
 
   // let's get more resolution
-  analogReadResolution(12);
+  //analogReadResolution(12);
 
   buttonL.attach( BUTTONL, INPUT );
   buttonR.attach( BUTTONR, INPUT );
   buttonE.attach( BUTTONE, INPUT_PULLUP );
-  buttonL.interval(25);
-  buttonR.interval(25);
+  buttonL.interval(15);
+  buttonR.interval(15);
   buttonE.interval(25);
   buttonL.setPressedState(LOW); // these are wired to +
   buttonR.setPressedState(LOW);
@@ -291,9 +291,9 @@ void loop1() {
 // this is just very wrong ;)
 // take the average on the input on pin 3,6,7
 void adc() {
-    uint16_t A =  map(readcv(0), 0, 4096, aMin, aMax);
-    uint16_t B =  map(readcv(1), 0, 4096, aMin, aMax);
-    uint16_t C =  map(readcv(2), 0, 4096, aMin, aMax);
+    uint16_t A =  map(readcv(0), 0, 1023, aMin, aMax);
+    uint16_t B =  map(readcv(1), 0, 1023, aMin, aMax);
+    uint16_t C =  map(readcv(2), 0, 1023, aMin, aMax);
       if (abs(lastA - A) > 1) {
         lastA = A;
         offA = lastA / 2;
@@ -333,9 +333,17 @@ uint16_t readcv(uint8_t potnum) {
 
 // pot inputs
 void knobs() {
-  a = map(analogRead(29), 0, 4096, aMin, aMax) + offA;
-  b = map(analogRead(28), 0, 4096, bMin, bMax) + offB;
-  c = map(analogRead(27), 0, 4096, cMin, cMax) + offC;
+  a = map(analogRead(29), 0, 1023, aMin, aMax) + offA;
+  b = map(analogRead(28), 0, 1023, bMin, bMax) + offB;
+  c = map(analogRead(27), 0, 1023, cMin, cMax) + offC;
+/*  if (debug){
+    Serial.print("a ");
+    Serial.print(a);
+    Serial.print(" b ");
+    Serial.print(b);
+    Serial.print(" c ");
+    Serial.println(c);
+  }*/
 }
 
 
