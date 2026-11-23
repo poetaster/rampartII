@@ -9,7 +9,7 @@
    Copyright (c)  2020 (emilie.o.gillet@gmail.com)
 */
 
-bool debug = true;
+bool debug = false;
 
 #include <Arduino.h>
 #include "stdio.h"
@@ -335,16 +335,16 @@ void updateControl() {
   if (trigger_in == 0) aNoteOff(lastNote,0);
 
   // finally, collect adc inputs
-  fm_mod =   (float)adc.voltage(0)/7.0f; // 7 is at a 1.2k to ground
-  timb_mod = (float)adc.voltage(1)/7.0f;
-  morph_mod = (float)adc.voltage(2)/7.0f;
+  fm_mod =   (float)adc.voltage(0)/4.0f; // 7 is at a 1.2k to ground
+  timb_mod = (float)adc.voltage(1)/4.0f;
+  morph_mod = (float)adc.voltage(2)/4.0f;
   decay_mod = (float)adc.readRaw(3); // raw audio input
   if (debug) {
-  //  Serial.print("timb ");
-  //  Serial.print(timb_mod);
-  //  Serial.print(" morph ");
-  //  Serial.println(morph_mod);
-    //Serial.println(decay_mod);
+    Serial.print("timb ");
+    Serial.print(timb_mod);
+    Serial.print(" morph ");
+    Serial.println(morph_mod);
+    Serial.println(decay_mod);
   }
 
 }
