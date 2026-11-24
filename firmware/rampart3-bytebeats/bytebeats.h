@@ -12,7 +12,7 @@ extern volatile int currentBank;
 extern volatile Bank banks[3];
 extern volatile int enc_offset;
 extern volatile int aMax, aMin, bMax, bMin, cMax, cMin;
-extern unsigned int Acc[3];
+extern uint16_t Acc[3];
 extern unsigned long freq[3];
 extern unsigned int tune;
 
@@ -249,7 +249,7 @@ void melodious(int pb2) {
       break;
     case 2: // wiretapped https://www.noisebridge.net/wiki/Bytebeat (1+(t>>10)%7)*(t*(1+(t>>13)%4)%(24+9*(t>>14)%8)&16)*10
       setLimits(4, 16, 21, 32, 8, 20);
-      result = (1 + (t >> 10) % 7) * (t * (1 + (t >> a) % 4) % (b + 9 * (t >> c) % 8)) * 10;
+      result = (1 + (t >> 10) % 7) * (t * (1 + (t >> a) % 4) % (b + 9 * (t >> c) % 8)) * 50;
       // too quiet (& 16 caps at ~1120) - louder: result = (1 + (t >> 10) % 7) * (t * (1 + (t >> a) % 4) % (b + 9 * (t >> c) % 8)) * 10;
       break;
     case 3: // wiretapped, too u11*(t*(1|(t>>10-(t>>17)%4)%8)&(8<<(t>>13)%4)*(1|(t>>15)%8))*(t>>10)
@@ -304,7 +304,7 @@ void melodious(int pb2) {
       break;
     case 14:  // beyon http://countercomplex.blogspot.com/2011/10/algorithmic-symphonies-from-one-line-of.html?showComment=1318081308422#c4945456935852459432
       setLimits(8, 16, 7, 14, 6, 12);
-      result = t >> 6 ^ t & 37 | t + (t ^ t >> a) - t * ((t % 24 ? 2 : 6)&t >> b)^t << 1 & (t & 598 ? t >> 4 : t >> c);
+      result = t >> 6 ^ t & 37 | t + (t ^ t >> a) - t * ((t % 24 ? 2 : 6)&t >> b)^t << 1 & (t & 598 ? t >> 4 : t >> c) * 60;
       break;
     case 15:  // poeaster variation with melodic with shells  variation on https://dollchan.net/btb/res/3.html#78
       // ( ( t >> 10 | t * 5 ) & ( t >> 8 | t * 4 ) & ( t >> 4 | t * 6 ) );
@@ -529,7 +529,7 @@ void noisy(int pb3) {
       break;
     case 17: // bit boring :) //https://www.blogger.com/profile/02935728280207314233
       setLimits(0, 8, 0, 8, 0, 8);
-      result = (t < 16384) ? (t * a & t * 2 >> b) : (t < 32768) ? (t * a & t * 2 >> c) : (t < 49152) ? (t * (b)&t * 2 >> a) : (t < 65536) ? (t * (b)&t * 2 >> c) : 0 ;
+      result = ((t < 16384) ? (t * a & t * 2 >> b) : (t < 32768) ? (t * a & t * 2 >> c) : (t < 49152) ? (t * (b)&t * 2 >> a) : (t < 65536) ? (t * (b)&t * 2 >> c) : 0 ) * 2;
       if (t >= 65536)t = 0;
       enc_offset = 1;
       break;

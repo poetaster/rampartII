@@ -54,7 +54,7 @@ uint16_t lastpotvalue[3]; // old pot readings
 #define LEDPIN   13 // usually 13
 
 // for the sine waves
-unsigned int Acc[3];
+uint16_t Acc[3];
 unsigned long freq[3];
 unsigned int tune, pitch;
 byte pot[] = {29, 28, 27};

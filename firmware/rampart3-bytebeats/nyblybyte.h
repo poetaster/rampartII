@@ -31,7 +31,7 @@ extern volatile int currentBank;
 extern volatile Bank banks[3];
 extern volatile int enc_offset;
 extern volatile int aMax, aMin, bMax, bMin, cMax, cMin;
-extern unsigned int Acc[3];
+extern uint16_t Acc[3];
 extern unsigned long freq[3];
 extern unsigned int tune;
 
