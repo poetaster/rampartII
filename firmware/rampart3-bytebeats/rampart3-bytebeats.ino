@@ -20,6 +20,23 @@
 #define PWMOUT 11
 
 PWMAudio DAC(PWMOUT);  // 16 bit PWM audio
+float global_volume = 0.8;
+
+// display related
+const int oled_sda_pin = 2;
+const int oled_scl_pin = 3;
+const int oled_i2c_addr = 0x3C;
+const int dw = 128;
+const int dh = 32;
+
+#include <Adafruit_SSD1306.h>
+#define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+Adafruit_SSD1306 display(dw, dh, &Wire1, OLED_RESET);
+#include "font.h"
+#include "helvnCB6pt7b.h"
+#define myfont helvnCB6pt7b // Org_01 looks better but is small.
+#include "display.h"
 
 #include "bytebeats.h"
 const unsigned int TOP = 0x07FF; // 11-bit resolution.  7812 Hz PWM
@@ -166,6 +183,18 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(encoderA_pin), checkEncoderPosition, CHANGE);
   attachInterrupt(digitalPinToInterrupt(encoderB_pin), checkEncoderPosition, CHANGE);
 
+  // DISPLAY and TOF are on this bus
+  Wire1.setSDA(oled_sda_pin);
+  Wire1.setSCL(oled_scl_pin);
+  Wire1.begin();
+    // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
+  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for (;;); // Don't proceed, loop forever
+  }
+  display.display();
+  displaySplash();
+
 
   // let's get more resolution
   //analogReadResolution(12);
@@ -268,12 +297,20 @@ void updateControl() {
     //if (result < 1000) digitalWrite(LEDPIN, LOW);
 
   }
+
+  // refresh the scope: samples of the running bytebeat function
+  static uint32_t last_scope = 0;
+  if (now - last_scope > 50) { // every 50 ms
+    last_scope = now;
+    drawScope();
+  }
 }
 
 void loop() {
   if ( DAC.availableForWrite()) {
       bytebeats_process();
       DAC.write(result);
+      scope_push(result); // record the rendered sample for the scope
     }
 }
 

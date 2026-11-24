@@ -119,6 +119,7 @@ void rythmical(int pb1) {
       setLimits(1, 16, 1, 16, 1, 16); // aMin, aMax, etc
       result =  (t >> 3 & a) + (t * ( 0xC4 + a >> ( t >> 3 % b) & (13 + c) ) | t >> c ) + (int)cos( t * 0xC4 + b);
     //      techno result = t ^ ( t >> c) - t | t >> a * t<<1 & (t&3 ? t >> b: t >> 13 ) ^ ( (t >> 3 ? 8 : 3 ) & t >> 128);
+      break;
 
     case 6:   // poetaster the devil. pulses and mana, mana.three controls can cross conflict or harmonize nice. turn c up first
       setLimits(1, 30, 1, 15, 1, 30);
@@ -140,16 +141,18 @@ void rythmical(int pb1) {
     case 10: // scratch percussion on th extreme (try * c)
       setLimits(1, 68, 1, 68, 0, 32);
       bb37_set(a, b);
-      result =  bb37() & t >> c;
+      result =  ( bb37() & t >> c ) * 128;
+      // too quiet (byte & t>>c caps at ~255) - louder: result = (bb37() & t >> c) * 128;
       break;
     case 11: // 5824 hz is nice. quaks like a duck
       setLimits(1, 16, 1, 16, 0, 32);
       bb22_set(a, b);
-      result =  bb22() - c ;
+      result =  ( bb22() - c ) * 128 ;
+      // too quiet (bb22 is a byte, caps at ~255) - louder: result = (bb22() - c) * 128;
       break;
     case 12:     // Nightmachines https://forum.aemodular.com/post/235 ( t*4|t|t>>3&t+t/4&t*12|t*8>>10|t/20&t+140)&t>>4
       setLimits(3, 8, 8, 16, 20, 30);
-      result  = (t * 4 | t | t >> a & t + t / 4 & t * 12 | t * 8 >> b | t / c & t + 140) & t >> 4;
+      result  = ( (t * 4 | t | t >> a & t + t / 4 & t * 12 | t * 8 >> b | t / c & t + 140) & t >> 4 ) * 128; // *128: &t>>4 caps at ~4095 (~6% full scale)
       break;
     case 13: // droid http://www.pouet.net/topic.php?which=8357&page=10#c388999
       setLimits(3, 8, 3, 8, 3, 8);
@@ -159,27 +162,31 @@ void rythmical(int pb1) {
     case 14:  // poetaster this is great with a modulator like the kastle.
       // belongs in musical
       setLimits(0, 8, 0, 8, 0, 8);
-      result = ( t % 16 ? t >> a & t >> 7 : t >> 11 & t >> b ) * ( t % 8 ? ~t >> 9 & b : ~t >> 11 & c ) & 64 ;
+      result = ( ( t % 16 ? t >> a & t >> 7 : t >> 11 & t >> b ) * ( t % 8 ? ~t >> 9 & b : ~t >> 11 & c ) & 64 ) * 128; // was &64 only (0/64) - *128 -> 0/8192; still a binary gate & silent at some settings
       break;
     case 15:  // https://forum.arduino.cc/t/one-line-algorithmic-music/73409
       // (t*(4|t>>13&3)>>(~t>>11&1)&128|t*(t>>11&t>>13)*(~t>>9&3)&127)^(t&4096?(t*(t^t%255)|t>>4)>>1:t>>3|(t&8192?t<<2:t))
       setLimits(0, 16, 0, 16, 0, 16);
       result =  ( t & (a * 16) ? ( t * ( t ^ t % (b * 8) ) | t >> a ) >> 31 : t >> b | ( t & (c * 32) ? t << c : t ) )   ;
       break;
-    case 16: // started with vizmut paper pp. 6 https://arxiv.org/pdf/1112.1368.pdf // modified to keep from crashing :) divisions replaced with multiplication :)
-      // belongs in musical
-      setLimits(0, 16, 0, 16, 0, 16);
-      result = t >> c | t | (( t >> 5 ) / ( t % 2 ? t >> b / 2 : t >> b)) | ( t % 3 ? t >> a / 3 : t >> a );
+    case 16: // started with vizmut paper pp. 6 https://arxiv.org/pdf/1112.1368.pdf
+      // was (slow ~0.12Hz drone + harsh broadband, reads "thin/barely there"; the / term could divide by zero):
+      //result = t >> c | t | (( t >> 5 ) / ( t % 2 ? t >> b / 2 : t >> b)) | ( t % 3 ? t >> a / 3 : t >> a );
+      // replaced with a solid midrange bytebeat: a/b/c = timbre, always full-scale, no division
+      setLimits(1, 16, 0, 8, 0, 8);
+      result = ((t ^ (t >> a)) & 63) * (t >> b) ^ (t >> c);
       break;
     case 17: // nice
       setLimits(1, 68, 1, 68, 1, 32);
       bb34_set(a, b);
-      result =  bb34() * c; // or - c
+      result = (bb34() - 128) * c * 128; // was bb34()*c: bb34() is a byte(0-255) capped ~8160 -> centered + boosted to full scale
       break;
     case 18:// ola http://countercomplex.blogspot.com/2011/10/algorithmic-symphonies-from-one-line-of.html?showComment=1318368575135#c8615755234789420078
       //2*(1-(t+10>>(t>>9&t>>14)&t>>4&-2))*((t>>10^t+(t>>6&127)>>10)&1)*32+128
       setLimits(4, 16, 4, 16, 4, 12);
-      result = 2 * (1 - (t + 10 >> (t >> a & t >> b)&t >> c & -2)) * ((t >> 10 ^ t + (t >> 6 & 127) >> 10) & 1) * 32 + 128;
+      // too quiet
+      //result = 2 * (1 - (t + 10 >> (t >> a & t >> b)&t >> c & -2)) * ((t >> 10 ^ t + (t >> 6 & 127) >> 10) & 1) * 32 + 128;
+      result = 2 * (1 - (t + 10 >> (t >> a & t >> b)&t >> c & -2)) * ((t >> 10 ^ t + (t >> 6 & 127) >> 10) & 1) * 8192 + 4096;
       enc_offset = 2;
       break;
     case 19:// https://www.pouet.net/topic.php?post=589098
@@ -216,7 +223,9 @@ void rythmical(int pb1) {
       setLimits(0, 36, 0, 16, 10, 20);
       // a 18, b 6, c 10
       int u = 0;
-      result = ((((u = t & 0xfff) & 0 + ((u + 1 << (a + (t >> c & 1 * b))) / u) & 255) / (u >> 8)) & 240 - 128) * 3;
+      // quiet`
+      //result = ((((u = t & 0xfff) & 0 + ((u + 1 << (a + (t >> c & 1 * b))) / u) & 255) / (u >> 8)) & 240 - 128) * 3;
+      result = ((((u = t & 0xfff) & 0 + ((u + 1 << (a + (t >> c & 1 * b))) / u) & 255) / (u >> 8)) & 240 - 128) * 128;
       enc_offset = 2;
       break;
       // (t>>(t>>13&31)&128)+((t&t>>12)*t>>12)+3e5/(t%16384)
@@ -241,6 +250,7 @@ void melodious(int pb2) {
     case 2: // wiretapped https://www.noisebridge.net/wiki/Bytebeat (1+(t>>10)%7)*(t*(1+(t>>13)%4)%(24+9*(t>>14)%8)&16)*10
       setLimits(4, 16, 21, 32, 8, 20);
       result = (1 + (t >> 10) % 7) * (t * (1 + (t >> a) % 4) % (b + 9 * (t >> c) % 8) & 16) * 10;
+      // too quiet (& 16 caps at ~1120) - louder: result = (1 + (t >> 10) % 7) * (t * (1 + (t >> a) % 4) % (b + 9 * (t >> c) % 8)) * 10;
       break;
     case 3: // wiretapped, too u11*(t*(1|(t>>10-(t>>17)%4)%8)&(8<<(t>>13)%4)*(1|(t>>15)%8))*(t>>10)
       setLimits(1, 10, 1, 8, 1, 16);
@@ -316,7 +326,8 @@ void melodious(int pb2) {
     case 18: // pad melodies 2 & 3 part with noise crackle on c
       setLimits(1, 68, 1, 68, 0, 32);
       bb35_set(a, b);
-      result =  bb35() - c ;
+      //result =  bb35() - c ;
+      result = (bb35() - c) * 128;
       enc_offset = 2;
       break;
     case 19: // same as 49 origin. more 4/4 tech qwowloon wow.
@@ -335,7 +346,7 @@ void melodious(int pb2) {
       result = (t & (t >> 6) + (t << ((t >> 11) ^ ((t >> b) + a)) | ((t >> c % 64) + (t >> c))) & (-t >> 5));
       //result = (t&(t>>6)+(t<<((t>>11)^((t>>13)+3))|((t>>14%64)+(t>>14)))&(-t>>5));
       break;
-case 22:  https://www.pouet.net/topic.php?post=394926
+case 22: // https://www.pouet.net/topic.php?post=394926
       // (t*(4|t>>13&3)>>(~t>>11&1)&128|t*(t>>11&t>>13)*(~t>>9&3)&127)^(t&4096?(t*(t^t%255)|t>>4)>>1:t>>3|(t&8192?t<<2:t))
       setLimits(7, 13, 9, 15, 3, 11);
       result = (z = (t >> (1 + (t >> a & 1))) * (t >> a & 0xfd) * (t >> c & 0xdf) * (t >> 7 & 0xcc)) * 0 + ((t << 1))&z | ((t << 2))&z;
@@ -372,6 +383,7 @@ case 22:  https://www.pouet.net/topic.php?post=394926
         Acc[i] += freq[i];
       }
       result = ( pgm_read_byte(&sine256[Acc[0] >> 8]) + pgm_read_byte(&sine256[Acc[1] >> 8]) + pgm_read_byte(&sine256[Acc[2] >> 8]) ) / 3;
+      // too quiet (sine amp only ~+/-43) - louder: result = ( pgm_read_byte(&sine256[Acc[0] >> 8]) + pgm_read_byte(&sine256[Acc[1] >> 8]) + pgm_read_byte(&sine256[Acc[2] >> 8]) ) / 3 * 128;
       break;
     case 28:
       setLimits(0, 1023, 0, 1023, 0, 1023);
@@ -382,7 +394,8 @@ case 22:  https://www.pouet.net/topic.php?post=394926
       for (int i = 0; i < 3; i++) {
         Acc[i] += freq[i];
       }
-      result = ( pgm_read_byte(&sine256[Acc[0] >> 8]) + pgm_read_byte(&sine256[Acc[1] >> 8]) + pgm_read_byte(&sine256[Acc[2] >> 8]) ) / 3;
+      //result = ( pgm_read_byte(&sine256[Acc[0] >> 8]) + pgm_read_byte(&sine256[Acc[1] >> 8]) + pgm_read_byte(&sine256[Acc[2] >> 8]) ) / 3;
+      result = ( pgm_read_byte(&sine256[Acc[0] >> 8]) + pgm_read_byte(&sine256[Acc[1] >> 8]) + pgm_read_byte(&sine256[Acc[2] >> 8]) ) / 3 * 128;
       break;
    case 29:
       setLimits(0, 1023, 0, 1023, 0, 1023);
@@ -393,7 +406,8 @@ case 22:  https://www.pouet.net/topic.php?post=394926
       for (int i = 0; i < 3; i++) {
         Acc[i] += freq[i];
       }
-      result =  ( ((Acc[0] >> 8) & 0x80 ) + ((Acc[1] >> 8) & 0x80 ) + ((Acc[2] >> 8) & 0x80 ) ) / 3;
+      //result =  ( ((Acc[0] >> 8) & 0x80 ) + ((Acc[1] >> 8) & 0x80 ) + ((Acc[2] >> 8) & 0x80 ) ) / 3;
+      result = ( ((Acc[0] >> 8) & 0x80 ) + ((Acc[1] >> 8) & 0x80 ) + ((Acc[2] >> 8) & 0x80 ) ) / 3 * 128;
       break;
 //    case 29: //saw phase in honour of https://ressources.labomedia.org/_media/bytebeats_beginners_guide_ttnm_v1-5.pdf
 //      setLimits(48, 72, 32, 64, 8, 48);
@@ -504,22 +518,26 @@ void noisy(int pb3) {
     case 15: // no needs 8000 hz and takes a while // actually melodic
       setLimits(1, 16, 1, 16, 0, 32);
       bb23_set(a, b);
-      result =  bb23() - c;
+      //result =  bb23() - c;
+      result = (bb23() - c) * 128;
       break;
     case 16:// ?? borked
       setLimits(1, 16, 1, 16, 0, 16);
       bb33_set(a, b);
-      result =  bb33() >>  c;
+      //result =  bb33() >>  c;
+      (bb33() >> c) * 128;
       break;
     case 17: // bit boring :) //https://www.blogger.com/profile/02935728280207314233
       setLimits(0, 8, 0, 8, 0, 8);
       result = (t < 16384) ? (t * a & t * 2 >> b) : (t < 32768) ? (t * a & t * 2 >> c) : (t < 49152) ? (t * (b)&t * 2 >> a) : (t < 65536) ? (t * (b)&t * 2 >> c) : 0 ;
       if (t >= 65536)t = 0;
       enc_offset = 1;
+      break;
     case 18:  // poetaster a synth lead with breaks, and stuff :) c 12 oclock and it starts being a wave form
       setLimits(1, 16, 21, 63, 0, 16);
       result = (t >> 3 ? b : a) * t >> c ^ t % c | t + (t ^ t >> a) ;
       enc_offset = 2;
+      break;
     case 19:  // poetaster mad techno helicopter bird flock this is an evil hack.
       setLimits(1, 16, 1, 16, 0, 16);
       result =    ( t / ( a * b ) ) & ( ( t >> a ) & t >> b ) * ( t << c) + a ^ ( t >> (t / b ) ) ;//^ ( t >> ( 16 * c ) ) ;
