@@ -249,7 +249,7 @@ void melodious(int pb2) {
       break;
     case 2: // wiretapped https://www.noisebridge.net/wiki/Bytebeat (1+(t>>10)%7)*(t*(1+(t>>13)%4)%(24+9*(t>>14)%8)&16)*10
       setLimits(4, 16, 21, 32, 8, 20);
-      result = (1 + (t >> 10) % 7) * (t * (1 + (t >> a) % 4) % (b + 9 * (t >> c) % 8) & 16) * 10;
+      result = (1 + (t >> 10) % 7) * (t * (1 + (t >> a) % 4) % (b + 9 * (t >> c) % 8)) * 10;
       // too quiet (& 16 caps at ~1120) - louder: result = (1 + (t >> 10) % 7) * (t * (1 + (t >> a) % 4) % (b + 9 * (t >> c) % 8)) * 10;
       break;
     case 3: // wiretapped, too u11*(t*(1|(t>>10-(t>>17)%4)%8)&(8<<(t>>13)%4)*(1|(t>>15)%8))*(t>>10)
@@ -315,13 +315,13 @@ void melodious(int pb2) {
     case 16: // try * c? but nice and rockin the way it is.
       setLimits(1, 68, 1, 68, 0, 32);
       bb32_set(a, b);
-      result =  bb32() | t >> c;
+      result = (bb32() | t >> c) * 128;
       enc_offset = 3;
       break;
     case 17:
       setLimits(1, 68, 1, 68, 0, 32);
       bb8_set(a, b);
-      result =  bb8() | t >> c;
+      result = (bb8() | t >> c) * 128;
       break;
     case 18: // pad melodies 2 & 3 part with noise crackle on c
       setLimits(1, 68, 1, 68, 0, 32);
@@ -382,7 +382,7 @@ case 22: // https://www.pouet.net/topic.php?post=394926
       for (int i = 0; i < 3; i++) {
         Acc[i] += freq[i];
       }
-      result = ( pgm_read_byte(&sine256[Acc[0] >> 8]) + pgm_read_byte(&sine256[Acc[1] >> 8]) + pgm_read_byte(&sine256[Acc[2] >> 8]) ) / 3;
+      result = ( pgm_read_byte(&sine256[Acc[0] >> 8]) + pgm_read_byte(&sine256[Acc[1] >> 8]) + pgm_read_byte(&sine256[Acc[2] >> 8]) ) / 3 * 128;
       // too quiet (sine amp only ~+/-43) - louder: result = ( pgm_read_byte(&sine256[Acc[0] >> 8]) + pgm_read_byte(&sine256[Acc[1] >> 8]) + pgm_read_byte(&sine256[Acc[2] >> 8]) ) / 3 * 128;
       break;
     case 28:
@@ -503,7 +503,7 @@ void noisy(int pb3) {
     case 12:  // b39 crashes? or just really slow? bb39 is nice but no go
       setLimits(1, 68, 1, 68, 0, 32);
       bb19_set( a, b);
-      result =  bb19() | t >> c ;
+      result = (bb19() | t >> c) * 128;
       break;
     case 13: // it evolves noisy. lots of breaks to silence
       setLimits(1, 68, 1, 68, 1, 16);
@@ -513,7 +513,7 @@ void noisy(int pb3) {
     case 14: // yeah, it's nice and evolves a lot :)
       setLimits(1, 68, 1, 68, 0, 32);
       bb17_set(a, b);
-      result =  bb17() | t >> c;
+      result = (bb17() | t >> c) * 128;
       break;
     case 15: // no needs 8000 hz and takes a while // actually melodic
       setLimits(1, 16, 1, 16, 0, 32);
@@ -525,7 +525,7 @@ void noisy(int pb3) {
       setLimits(1, 16, 1, 16, 0, 16);
       bb33_set(a, b);
       //result =  bb33() >>  c;
-      (bb33() >> c) * 128;
+      result = (bb33() >> c) * 128;
       break;
     case 17: // bit boring :) //https://www.blogger.com/profile/02935728280207314233
       setLimits(0, 8, 0, 8, 0, 8);
