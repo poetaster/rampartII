@@ -69,7 +69,7 @@ int d = 0; // hmm?
 
 volatile int currentBank = 0;
 volatile Bank banks[3] = {
-  {1, 25},
+  {1, 26},
   {1, 29},
   {1, 20}
 };

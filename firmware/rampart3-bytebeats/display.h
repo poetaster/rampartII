@@ -80,9 +80,7 @@ void displaySplash() {
   display.display();
 }
 
-//  render samples of the running bytebeat function 
-// The audio core (core 0) pushes each rendered sample into a ring buffer
-// rendered in update on core1
+//  render samples of the running bytebeat function
 
 #define SCOPE_WIDTH  128   // one sample per pixel column, must be a power of 2
 #define SCOPE_HEIGHT 32
