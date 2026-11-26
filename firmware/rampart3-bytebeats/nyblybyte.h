@@ -567,14 +567,12 @@ byte bb28() {
 // "(t*t)/(t>>13 ^ t>>8)", "codeMinified": "t*t/(t>>13^t>>8)"}, {"description":
 // "Plucker v2", "codeOriginal": "((t/4)>>t/4)|(t>>2)", "codeMinified":
 // "t/4>>t/4|t>>2"}]}
-/*
 byte bb29_vals[] = {1, 9, 8, 128};
 void bb29_set(byte a, byte b) { bb29_vals[a * 4 / 255] = b * 255 / 255; }
 byte bb29() {
   return (t * t / (bb29_vals[0] + (t >> bb29_vals[1] & t >> bb29_vals[2]))) &
          bb29_vals[3];
 }
-*/
 // {"author": "Devan Wolf", "url": "https://dollchan.net/btb/res/3.html#224",
 // "date": "2022-10-18", "children": [{"description": "Stand, Back, You...",
 // "codeOriginal": "(t>>(t>>(t>>12&15)))>>t", "codeMinified":
@@ -592,7 +590,6 @@ byte bb29() {
 // "codeOriginal":
 // "(t*(4|t>>13&3)>>(~t>>11&1)&128|t*(t>>11&t>>13)*(~t>>9&3)&127)^(t&4096?(t*(t^t%255)|t>>4)>>1:t>>3|(t&8192?t<<2:t))",
 // "starred": 1}]}
-/*
 byte bb30_vals[] = {12, 10, 7, 2};
 void bb30_set(byte a, byte b) { bb30_vals[a * 4 / 255] = b * 23 / 255; }
 byte bb30() {
@@ -600,7 +597,6 @@ byte bb30() {
           << (-t >> bb30_vals[1] & bb30_vals[bb30_vals[3]])) &
          -t >> 2;
 }
-*/
 // {"author": "Devan Wolf", "url": "https://dollchan.net/btb/res/3.html#224",
 // "date": "2022-10-18", "children": [{"description": "Stand, Back, You...",
 // "codeOriginal": "(t>>(t>>(t>>12&15)))>>t", "codeMinified":

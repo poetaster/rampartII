@@ -82,7 +82,7 @@ volatile Bank banks[4] = {
   {1, 26},
   {1, 29},
   {1, 20},
-  {1, 22}
+  {1, 30}
 };
 
 int numProg = 73;
@@ -299,13 +299,16 @@ void updateControl() {
     //harm_in = harm_in + turn;
 
   }
-  /// only set new pos last after buttons have had a chance to use the delta
-  encoder_pos_last = encoder_pos;
-  encoder_delta = 0;  // we've used it
-  // start tracking time encoder button held
+  // don't call adc to often
   if (millis() > timeoffset + 25) {
     readAdc();
   }
+
+  /// only set new pos last after buttons have had a chance to use the delta
+  encoder_pos_last = encoder_pos;
+  encoder_delta = 0;  // we've used it
+
+  // start tracking time encoder button held
   // EncoderButton object updates
   if (millis() > timeoffset + 150 ) {
     //if (debug) Serial.println("hit timer offset");
@@ -346,35 +349,25 @@ void loop1() {
 // take the average on the input on pin 3,6,7
 void readAdc() {
 
-    //c = map(analogRead(27), 0, 1023, cMin, cMax) + offC;
     //uint16_t A =  map(analogRead(26), 0, 1023, aMin, aMax);
-    uint16_t A =  map(adc.voltage(0), 0.0, 3.0, aMin, aMax);
-    uint16_t B =  map(adc.voltage(1), 0.0, 3.0, bMin, bMax);
-    uint16_t C =  map(adc.voltage(2), 0.0, 3.0, cMin, cMax);
+    float A =  adc.voltage(0);
+    A =  map(A, 0.0, 3.0, aMin, aMax);
+    float B =  map(adc.voltage(1), 0.0, 3.0, bMin, bMax);
+    float C =  map(adc.voltage(2), 0.0, 3.0, cMin, cMax);
 
       if (abs(lastA - A) > 1) {
         lastA = A;
         offA = lastA - 1;
-        if (debug) Serial.print("A: ");
-        if (debug) Serial.println(offA);
-
       }
 
       if (abs(lastB - B) > 1) {
         lastB = B;
         offB = lastB - 1;
-        if (debug) Serial.print("B: ");
-        if (debug) Serial.println(offB);
-
-
       }
 
       if (abs(lastC - C) > 1) {
         lastC = C;
         offC = lastC - 1 ;
-        if (debug) Serial.print("C: ");
-        if (debug) Serial.println(offC);
-
       }
 }
 
