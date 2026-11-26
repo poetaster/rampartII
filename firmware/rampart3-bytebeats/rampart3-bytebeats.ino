@@ -14,6 +14,7 @@
 #include "hardware/gpio.h"
 #include "hardware/sync.h"
 #include <hardware/pwm.h>
+#include <Wire.h>
 
 #include <PWMAudio.h>
 #define SAMPLERATE 8000
@@ -28,6 +29,15 @@ const int oled_scl_pin = 3;
 const int oled_i2c_addr = 0x3C;
 const int dw = 128;
 const int dh = 32;
+
+// TOF on same bus as adafruit
+//#include <VL53L1X.h>
+//VL53L1X sensor;
+
+// the adc 4 inputs 16 bits
+#include <AlashADS1115.h>
+AlashADS1115 adc;
+
 
 #include <Adafruit_SSD1306.h>
 #define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
@@ -51,7 +61,7 @@ uint16_t lastpotvalue[3]; // old pot readings
 #define POT_MIN 4   // A/D may not read min value of 0 so use a bit larger value for map() function
 #define POT_MAX 1023 // A/D may not read max value of 1023 so use a bit smaller value for map() function
 
-#define LEDPIN   13 // usually 13
+//#define LEDPIN   13 // usually 13
 
 // for the sine waves
 uint16_t Acc[3];
@@ -68,10 +78,11 @@ volatile int result;
 int d = 0; // hmm?
 
 volatile int currentBank = 0;
-volatile Bank banks[3] = {
+volatile Bank banks[4] = {
   {1, 26},
   {1, 29},
-  {1, 20}
+  {1, 20},
+  {1, 22}
 };
 
 int numProg = 73;
@@ -95,14 +106,14 @@ void checkEncoderPosition() {
  encoder.tick();   // call tick() to check the state.
 }
 
-#include <Bounce2.h>
+#include "Switch.h"
 // button inputs
 #define BUTTONL  5 // these are the touch surfaces
 #define BUTTONR 6 
 #define BUTTONE 8 
-Bounce2::Button buttonL = Bounce2::Button();
-Bounce2::Button buttonR = Bounce2::Button();
-Bounce2::Button buttonE = Bounce2::Button();
+Switch  buttonL(5, 3, false);
+Switch  buttonR(6, 3, false);
+Switch  buttonE(8, 3, false);
 
 int encoder_pos_last = 0;
 long encoder_delta = 0;
@@ -195,26 +206,26 @@ void setup() {
   display.display();
   displaySplash();
 
+ // this is the ADCs I2C
+  Wire.setSDA(12);
+  Wire.setSCL(13);
+  Wire.setClock(100000); // use 100 kHz I2Ca
+  Wire.begin();
+  // start
+  adc.begin();
+  adc.setRate(860);
+  adc.setAutoGain(true);
 
   // let's get more resolution
   //analogReadResolution(12);
-
-  buttonL.attach( BUTTONL, INPUT );
-  buttonR.attach( BUTTONR, INPUT );
-  buttonE.attach( BUTTONE, INPUT_PULLUP );
-  buttonL.interval(15);
-  buttonR.interval(15);
-  buttonE.interval(25);
-  buttonL.setPressedState(LOW); // these are wired to +
-  buttonR.setPressedState(LOW);
-  buttonE.setPressedState(HIGH); // this one to ground
-
-  pinMode(LEDPIN, OUTPUT);
+  pinMode(26, INPUT);  //pin block
+  //pinMode(LEDPIN, OUTPUT);
   //pinMode(PWMPIN, OUTPUT);
 
-  //lastA =  analogRead(A3);
-  //lastB =  analogRead(A6);
-  //lastC =  analogRead(A7);
+  pinMode(8, INPUT_PULLUP);  //pin block
+  lastA =  0; //analogRead(A3);
+  lastB =  0; //analogRead(A6);
+  lastC =  0; //analogRead(A7);
 
   // set up Pico PWM audio output
   DAC.setBuffers(4, 32);  // DMA buffers
@@ -225,36 +236,40 @@ void setup() {
 
 
 void updateControl() {
+
   uint32_t now = millis();
   bool anybuttonpressed;
   anybuttonpressed = false;
 
-  buttonL.update();
-  // button reads for bank changes
-  if (buttonL.pressed()) {
-      onLeftReleased();
-  }
+  byte pinState; // commone state for button check
 
-  buttonR.update();
-  // button reads for program changes
-  if (buttonR.pressed()) {
-      onRightReleased();
-  }
+  if (millis() > timeoffset + 150 ) {
+    pinState = buttonL.stateDebounced();
+    // button reads for bank changes
+    if (buttonL.changed() && pinState == 0 ) {
+        onLeftReleased();
+    }
 
-  buttonE.update();
-  if (buttonE.pressed()) {
-   encoder_push_millis = now;
-   currentBank = currentBank + 1;
-   if (currentBank > 2) currentBank = 0;
-   if (debug) {
-     Serial.print("bank: ");
-     Serial.println(currentBank );
-   }
-  } else {
-    encoder_push_millis = 0;
-    encoder_held = false;
-  }
+    pinState = buttonR.stateDebounced();
+    // button reads for program changes
+    if (buttonR.changed() && pinState == 0 ) {
+        onRightReleased();
+    }
 
+    pinState = buttonE.stateDebounced();
+    if (buttonE.changed() && pinState == 0 ) {
+     encoder_push_millis = now;
+     currentBank = currentBank + 1;
+     if (currentBank > 3) currentBank = 0;
+     if (debug) {
+       Serial.print("bank: ");
+       Serial.println(currentBank );
+     }
+    } else {
+      encoder_push_millis = 0;
+      encoder_held = false;
+    }
+  }
   // first encoder
   encoder.tick();
 
@@ -288,9 +303,12 @@ void updateControl() {
   encoder_pos_last = encoder_pos;
   encoder_delta = 0;  // we've used it
   // start tracking time encoder button held
-
+  if (millis() > timeoffset + 25) {
+    readAdc();
+  }
   // EncoderButton object updates
-  if (millis() > timeoffset + 50 ) {
+  if (millis() > timeoffset + 150 ) {
+    //if (debug) Serial.println("hit timer offset");
     timeoffset = millis();
     //display_value(SRATE);
     //if (result > 5000) digitalWrite(LEDPIN, HIGH);
@@ -320,36 +338,45 @@ void setup1() {
 
 void loop1() {
   updateControl(); // required here
-  //adc();
   knobs();
 }
 
 
 // this is just very wrong ;)
 // take the average on the input on pin 3,6,7
-void adc() {
-    uint16_t A =  map(readcv(0), 0, 1023, aMin, aMax);
-    uint16_t B =  map(readcv(1), 0, 1023, aMin, aMax);
-    uint16_t C =  map(readcv(2), 0, 1023, aMin, aMax);
+void readAdc() {
+
+    //c = map(analogRead(27), 0, 1023, cMin, cMax) + offC;
+    //uint16_t A =  map(analogRead(26), 0, 1023, aMin, aMax);
+    uint16_t A =  map(adc.voltage(0), 0.0, 3.0, aMin, aMax);
+    uint16_t B =  map(adc.voltage(1), 0.0, 3.0, bMin, bMax);
+    uint16_t C =  map(adc.voltage(2), 0.0, 3.0, cMin, cMax);
+
       if (abs(lastA - A) > 1) {
         lastA = A;
-        offA = lastA / 2;
-        if (debug) Serial.println(A);
+        offA = lastA - 1;
+        if (debug) Serial.print("A: ");
+        if (debug) Serial.println(offA);
 
       }
 
       if (abs(lastB - B) > 1) {
         lastB = B;
-        offB = lastB / 2;
+        offB = lastB - 1;
+        if (debug) Serial.print("B: ");
+        if (debug) Serial.println(offB);
+
 
       }
 
       if (abs(lastC - C) > 1) {
         lastC = C;
-        offC = lastC / 2 ;
+        offC = lastC - 1 ;
+        if (debug) Serial.print("C: ");
+        if (debug) Serial.println(offC);
 
       }
-  }
+}
 
 uint16_t readcv(uint8_t potnum) {
   int val = 0;
@@ -370,9 +397,13 @@ uint16_t readcv(uint8_t potnum) {
 
 // pot inputs
 void knobs() {
+  // includes offset from 3 cv inputs
   a = map(analogRead(29), 0, 1023, aMin, aMax) + offA;
-  b = map(analogRead(28), 0, 1023, bMin, bMax) + offB;
+  constrain(a, aMin, aMax);
+  b = map(analogRead(28), 0, 1023, bMin, bMax) + offB ;
+  constrain(b, bMin, bMax);
   c = map(analogRead(27), 0, 1023, cMin, cMax) + offC;
+  constrain(c, cMin, cMax);
 /*  if (debug){
     Serial.print("a ");
     Serial.print(a);
