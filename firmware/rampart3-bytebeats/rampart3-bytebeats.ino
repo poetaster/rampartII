@@ -77,7 +77,7 @@ volatile int offA, offB, offC;
 volatile int result;
 int d = 0; // hmm?
 
-volatile int currentBank = 0;
+volatile int currentBank = 3;
 volatile Bank banks[4] = {
   {1, 26},
   {1, 29},
@@ -91,7 +91,7 @@ int numProg = 73;
 volatile int aMax = 99, aMin = 0, bMax = 99, bMin = 0, cMax = 99, cMin = 0;
 
 // default rate close to the original bytebeat speed
-volatile int SRATE = 8192; 
+volatile int SRATE = 1128; 
 
 bool debug = true;
 
@@ -279,18 +279,14 @@ void updateControl() {
   }
 
   if ( encoder_pos != encoder_pos_last  ) {
-    long cstep = (long)encoder_delta * 128; 
-    long oSRATE = SRATE;
+    long cstep = (long)encoder_delta * 32; 
     SRATE = constrain(SRATE + cstep, 1000, 48000);
-    DAC.setFrequency(SRATE);
-    if (SRATE != oSRATE) {
       if (debug) {
         Serial.print("SRATE changing: ");
         Serial.print(oSRATE);
         Serial.print(" -> ");
         Serial.println(SRATE);
       }
-    }
   }
 
   // now, after buttons check if only encoder moved and no buttons
@@ -328,6 +324,8 @@ void updateControl() {
 }
 
 void loop() {
+
+  DAC.setFrequency(SRATE);
   if ( DAC.availableForWrite()) {
       bytebeats_process();
       DAC.write(result);

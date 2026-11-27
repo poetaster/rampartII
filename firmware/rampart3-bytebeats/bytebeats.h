@@ -96,26 +96,29 @@ void rythmical(int pb1) {
 
   switch (pb1) {
     case 1:  // FINE
-      setLimits(1, 32, 1, 16, 1, 9); // aMin, aMax, etc
+      setLimits(6, 16, 1, 16, 1, 9); // aMin, aMax, etc
+      SRATE = 7192;
       //result = ( ~t >>7? ~t>>3:~t>>5) * ( (127 & t * ( b & t >> 9) ) < (254 & t * ( 2 + ( c & t >> a ) ) ) );
       result = t >> c ^ t & 1 | t + (t ^ t >> 13) - t * ( (t >> 5 ? b : a) & t >> ( 8 - ( a >> 1 )  ) ) * 12;
       // ( t%8 ? ~t >> 9 & b: ~t >>11 & c )
       break;
-    case 2: // FINE more noise? move to end, starts strong and fades out
+    case 2: // FINE 
       setLimits(1, 16, 1, 16, 1, 16);
-      result =  t >> 4 ^ t & c | t + (t ^ t >> 8) - t * ((t >> 3 ? b : a) & t >> ( 5 - ( b >> 1 )  ) ) * 24;
+      SRATE = 7192;
+      result =  t >> 4 ^ t & c | t + (t ^ t >> 8) - t * ((t >> 3 ? b : a) & t >> ( 5 - ( b >> 1 )  ) ) * 12;
       // ^ t << 1 & (a & 12 ? t >> 4 : t >> 10)
       break;
     case 3: // BORKED move to noise
+      SRATE = 7192;
       setLimits(1, 32, 1, 32, 1, 32);
-      result = t >> (2 * a) ^ t & c | t + (t ^ t >> 21) - t * ((t % 8 ? b : a) & t >> ( 8 - ( b >> 5 )  ) ) * 32;
+      result = t >> (2 * a) ^ t & c | t + (t ^ t >> 21) - t * ((t % 8 ? b : a) & t >> ( 8 - ( b >> 5 )  ) ) * 12;
       break;
 
     case 4: // ADJUST SLOW move to end of noise
-      //  poetaster
       setLimits(8, 32, 8, 32, 8, 32);
+      SRATE = 7192;
       //if (t > 65536) t = -65536;
-      result = ((t % 32 ? ~t >> 2 : t >> 3) & t + (t >> a) + ( ~ (t ^ b % 2 | t >> c) )  ) * 24;
+      result = ((t % 32 ? ~t >> 2 : t >> 3) & t + (t >> a) + ( ~ (t ^ b % 2 | t >> c) )  ) * 12;
 
       //result=  ((t%4 ? c : b) & ((t<<1)^-(t>>a&1) &  ( 127 << (t+ b) | (t >> c)));
       break;
@@ -626,158 +629,187 @@ void noisy(int pb3) {
 void nybly(int pb4) {
 
   switch (pb4) {
-    case 1: // FINE but goes silent?
+    case 1: // BORKED
       setLimits(1, 228, 1, 228, 2, 16);
       bb0_set(a, b);
       result =  ( bb0() & t >> c ) * 128;
       break;
 
-    case 2: // FINE really slow move to melodic
+    case 2: // FINE move to melodic
       setLimits(1, 228, 1, 228, 2, 8);
+      SRATE = 4072;
       bb1_set(a, b);
       result =  ( bb1() & t >> c ) * 128;
       break;
 
-    case 3: // FINE move to rythmic
+    case 3: // FINE move to noise
       setLimits(1, 228, 1, 228, 2, 8);
+      SRATE = 4072;
       bb2_set(a, b);
       result =  ( bb2() & t >> c ) * 128;
       break;
 
-    case 4: // FINE noise fx to harsh noise
+    case 4: // FINE move to noise
       setLimits(1, 228, 1, 228, 2, 8);
+      SRATE = 2408;
       bb3_set(a, b);
       result =  ( bb3() & t >> c ) * 128;
       break;
 
     case 5: // FINE belongs in  rythmic
       setLimits(1, 228, 1, 228, 2, 8);
+      SRATE = 2408;
       bb4_set(a, b);
       result =  ( bb4() & t >> c ) * 128;
       break;
-    case 6: // FINE move to rythmic
+    case 6: //  BORKED
       setLimits(1, 228, 1, 228, 1, 8);
+      SRATE = 3176;
       bb5_set(a, b);
       result =  ( bb5() & t >> c ) * 128;
       break;
-    case 7: // FINE belongs in noise has long pauses
+    case 7: // BORKED belongs in noise has long pauses
       setLimits(1, 228, 1, 228, 1, 8);
+      SRATE = 4712;
       bb6_set(a, b);
       result =  ( bb6() & t >> c ) * 128; 
       break;
-    case 8: // FINE move to melodic
+    case 8: // BORKED move to melodic
       setLimits(1, 228, 1, 228, 1, 8);
+      SRATE = 3304;
       bb7_set(a, b);
       result =  ( bb7() & t >> c ) * 128; 
       break;
     case 9: // FINE move to melodic
       setLimits(1, 228, 1, 228, 1, 8);
+      SRATE = 6248;
       bb8_set(a, b);
       result =  ( bb8() & t >> c ) * 128; 
       break;
     case 10: // FINE move to melodic
       setLimits(1, 228, 1, 228, 1, 8);
+      SRATE = 6248;
       bb9_set(a, b);
       result =  ( bb9() & t >> c ) * 128; 
       break;
-    case 11: // Borked
+    case 11: // FINE move to melodic
       setLimits(1, 228, 1, 228, 1, 8);
+      SRATE = 4200;
       bb10_set(a, b);
       result =  ( bb10() & t >> c ) * 128; 
       break;
-    case 12: // FINE, move to the rythmic
+    case 12: // FINE, move to melodic
       setLimits(1, 228, 1, 228, 1, 8);
+      SRATE = 4200;
       bb11_set(a, b);
       result =  ( bb11() & t >> c ) * 128; 
       break;
     case 13: // FINE, belongs to the noise
       setLimits(1, 228, 1, 228, 1, 8);
+      SRATE = 4200;
       bb12_set(a, b);
       result =  ( bb12() & t >> c ) * 128; 
       break;
     case 14: // FINE, move to rythmic
       setLimits(1, 228, 1, 228, 1, 8);
+      SRATE = 6120;
       bb13_set(a, b);
       result =  ( bb13() & t >> c ) * 128; 
       break;
     case 15: // FINE belongs to  rythmic
       setLimits(1, 228, 1, 228, 1, 8);
+      SRATE = 2536;
       bb14_set(a, b);
       result =  ( bb14() & t >> c ) * 128; 
       break;
-    case 16: // FINE when slow move to noise
+    case 16: // FINE move to rythmic
       setLimits(1, 228, 1, 228, 1, 8);
+      SRATE = 3176;
       bb15_set(a, b);
       result =  ( bb15() & t >> c ) * 128; 
       break;
-    case 17: // FINE SLOW melodic
+    case 17: // FINE move to melodic
       setLimits(1, 228, 1, 228, 1, 8);
+      SRATE = 4584;
       bb16_set(a, b);
       result =  ( bb16() & t >> c ) * 128; 
       break;
     case 18: // FINE to noise
       setLimits(1, 228, 1, 228, 1, 8);
+      SRATE = 2408;
       bb17_set(a, b);
       result =  ( bb17() & t >> c ) * 128; 
       break;
     case 19: // FINE to melodic
       setLimits(1, 228, 1, 228, 1, 8);
+      SRATE = 7912;
       bb18_set(a, b);
       result =  ( bb18() & t >> c ) * 128; 
       break;
-    case 20: // FINE to noise
+    case 20: // FINE to rythmic
       setLimits(1, 228, 1, 228, 1, 8);
+      SRATE = 1128;
       bb19_set(a, b);
       result =  ( bb19() & t >> c ) * 128; 
       break;
-    case 21:// BORKED 
+    case 21:// FINE move to noise
       setLimits(1, 228, 1, 228, 1, 8);
+      SRATE = 1512;
       bb20_set(a, b);
       result =  ( bb20() & t >> c ) * 128; 
       break;
     case 22: // FINE move to melodic
       setLimits(1, 228, 1, 228, 1, 8);
+      SRATE = 3816;
       bb21_set(a, b);
-      if (t >= 65536)t = 0;
+      //if (t >= 65536) t = 0;
       result =  ( bb21() & t >> c ) * 128; 
       break;
-    case 23: // Fine slow  move to noise
+    case 23: // Fine move to noise
       setLimits(1, 228, 1, 228, 1, 8);
+      SRATE = 2920;
       bb24_set(a, b);
       result =  ( bb24() & t >> c ) * 128; 
       break;
-    case 24: // FINE bottom of melodic
+    case 24: // FINE move to rythmic 
       setLimits(1, 228, 1, 228, 1, 8);
+      SRATE = 2920;
       bb25_set(a, b);
       result =  ( bb25() & t >> c ) * 128; 
       break;
     case 25: // FINE move to noise 
       setLimits(1, 228, 1, 228, 1, 8);
+      SRATE = 3560;
       bb26_set(a, b);
       result =  ( bb26() & t >> c ) * 128; 
       break;
     case 26: // FINE move to noise
       setLimits(1, 228, 1, 228, 1, 8);
+      SRATE = 3560;
       bb27_set(a, b);
       result =  ( bb27() & t >> c ) * 128; 
       break;
-    case 27: // BORKED 
+    case 27: // BORKED
       setLimits(1, 228, 1, 228, 1, 8);
+      SRATE = 2792;
       bb28_set(a, b);
-      result =  ( bb28() & t >> c ) * 128; 
+      result =  ( bb28() & t >> c ) * 128;
       break;
     case 28: // FINE move to noise
       setLimits(1, 228, 1, 228, 1, 8);
+      SRATE = 2024;
       bb29_set(a, b);
-      result =  ( bb29() & t >> c ) * 128; 
+      result =  ( bb29() & t >> c ) * 128;
       break;
-    case 29: // FINE move to melodic
+    case 29: // FINE move to rythmic
       setLimits(1, 228, 1, 228, 1, 8);
+      SRATE = 2536;
       bb30_set(a, b);
       result =  ( bb30() & t >> c ) * 128; 
       break;
     case 30: // FINE move to rythmic
       setLimits(1, 228, 1, 228, 1, 8);
+      SRATE = 4072;
       bb39_set(a, b);
       result =  ( bb39() & t >> c ) * 128; 
       break;
