@@ -48,9 +48,6 @@ Adafruit_SSD1306 display(dw, dh, &Wire1, OLED_RESET);
 #define myfont helvnCB6pt7b // Org_01 looks better but is small.
 #include "display.h"
 
-#include "bytebeats.h"
-const unsigned int TOP = 0x07FF; // 11-bit resolution.  7812 Hz PWM
-
 // noise reduction for cv reads
 uint16_t potvalue[3]; // pot readings
 uint16_t lastpotvalue[3]; // old pot readings
@@ -70,7 +67,7 @@ unsigned int tune, pitch;
 byte pot[] = {29, 28, 27};
 // from levitation osc.
 
-
+// byte beat globals
 volatile long t = 0;
 volatile int a, b, c, i;
 volatile int offA, offB, offC;
@@ -78,6 +75,12 @@ volatile int result;
 int d = 0; // hmm?
 
 volatile int currentBank = 3;
+
+struct Bank {
+  volatile int currentProg;
+  volatile int maxProg;
+};
+
 volatile Bank banks[4] = {
   {1, 26},
   {1, 29},
@@ -88,10 +91,13 @@ volatile Bank banks[4] = {
 int numProg = 73;
 
 // these ranges are provisional and in schollz equations need to be reset
-volatile int aMax = 99, aMin = 0, bMax = 99, bMin = 0, cMax = 99, cMin = 0;
+volatile int aMax = 99, aMin = 0, bMax = 99, bMin = 0, cMax = 99, cMin = 0, srateMin = 1000, srateMax = 48000;
 
 // default rate close to the original bytebeat speed
 volatile int SRATE = 1128; 
+
+#include "bytebeats.h"
+const unsigned int TOP = 0x07FF; // 11-bit resolution.  7812 Hz PWM
 
 bool debug = true;
 
@@ -144,6 +150,8 @@ void onLeftReleased() {
   if (debug) {
     Serial.println("onLeftReleased TRIGGERED");
   }
+  SRATE = constrain(SRATE, srateMin, srateMax);
+  DAC.setFrequency(SRATE);
   if (banks[currentBank].currentProg > 1) {
     banks[currentBank].currentProg--;
   } else {
@@ -163,6 +171,8 @@ void onRightReleased() {
   if (debug) {
     Serial.println("onRightReleased TRIGGERED");
   }
+  SRATE = constrain(SRATE, srateMin, srateMax);
+  DAC.setFrequency(SRATE);
   if (banks[currentBank].currentProg < banks[currentBank].maxProg) {
     banks[currentBank].currentProg++;
   } else {
@@ -234,42 +244,15 @@ void setup() {
 
 }
 
+int last_rate = 1000;
 
 void updateControl() {
 
   uint32_t now = millis();
   bool anybuttonpressed;
   anybuttonpressed = false;
-
   byte pinState; // commone state for button check
 
-  if (millis() > timeoffset + 150 ) {
-    pinState = buttonL.stateDebounced();
-    // button reads for bank changes
-    if (buttonL.changed() && pinState == 0 ) {
-        onLeftReleased();
-    }
-
-    pinState = buttonR.stateDebounced();
-    // button reads for program changes
-    if (buttonR.changed() && pinState == 0 ) {
-        onRightReleased();
-    }
-
-    pinState = buttonE.stateDebounced();
-    if (buttonE.changed() && pinState == 0 ) {
-     encoder_push_millis = now;
-     currentBank = currentBank + 1;
-     if (currentBank > 3) currentBank = 0;
-     if (debug) {
-       Serial.print("bank: ");
-       Serial.println(currentBank );
-     }
-    } else {
-      encoder_push_millis = 0;
-      encoder_held = false;
-    }
-  }
   // first encoder
   encoder.tick();
 
@@ -279,14 +262,42 @@ void updateControl() {
   }
 
   if ( encoder_pos != encoder_pos_last  ) {
-    long cstep = (long)encoder_delta * 32; 
-    SRATE = constrain(SRATE + cstep, 1000, 48000);
-      if (debug) {
+
+    pinState = buttonE.stateDebounced();
+    long cstep = (long)encoder_delta * 8;
+    SRATE = constrain(SRATE + cstep, srateMin, srateMax);
+    DAC.setFrequency(SRATE);
+    if (debug) {
         Serial.print("SRATE changing: ");
-        Serial.print(oSRATE);
-        Serial.print(" -> ");
         Serial.println(SRATE);
-      }
+    }
+  }
+
+
+  if (millis() > timeoffset + 150 ) {
+    pinState = buttonL.stateDebounced();
+    // button reads for bank changes
+    if (buttonL.changed() && pinState == 0 ) {
+        onLeftReleased();
+    }
+    pinState = buttonR.stateDebounced();
+    // button reads for program changes
+    if (buttonR.changed() && pinState == 0 ) {
+        onRightReleased();
+    }
+    pinState = buttonE.stateDebounced();
+    if (buttonE.changed() && pinState == 0 && ! encoder_held) {
+     encoder_push_millis = now;
+     currentBank = currentBank + 1;
+     if (currentBank > 3) currentBank = 0;
+     if (debug) {
+        Serial.print("bank: ");
+        Serial.println(currentBank );
+     }
+    } else {
+      encoder_push_millis = 0;
+      encoder_held = false;
+    }
   }
 
   // now, after buttons check if only encoder moved and no buttons
@@ -324,8 +335,6 @@ void updateControl() {
 }
 
 void loop() {
-
-  DAC.setFrequency(SRATE);
   if ( DAC.availableForWrite()) {
       bytebeats_process();
       DAC.write(result);
