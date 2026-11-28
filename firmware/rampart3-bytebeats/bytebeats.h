@@ -121,12 +121,12 @@ void rythmical(int pb1) {
 
     case 5:  // BORKED
       // always sirens noisy based on https://www.pouet.net/topic.php?post=388938
-      setLimits(1, 16, 1, 16, 1, 16, 2000, 400); // aMin, aMax, etc
+      setLimits(1, 16, 1, 16, 1, 16, 2000, 4000); // aMin, aMax, etc
       //result =  (t >> 3 & a) + (t * ( 0xC4 + a >> ( t >> 3 % b) & (13 + c) ) | t >> c ) + (int)cos( t * 0xC4 + b);
       result = t ^ ( t >> c) - t | t >> a * t<<1 & (t&3 ? t >> b: t >> 13 ) ^ ( (t >> 3 ? 8 : 3 ) & t >> 128) * 24;
       break;
 
-    case 6:  // BORKED
+    case 6:  // FINE  move to noise
       // poetaster the devil.  FINE
       // pulses and mana, mana.three controls can cross conflict or harmonize nice. turn c up first
       setLimits(1, 16, 1, 16, 1, 16, 2000, 4000);
@@ -139,7 +139,7 @@ void rythmical(int pb1) {
       break;
     case 8: // FINE only works on a few speed conditions (3000, 3048)
       // started with vizmut paper pp. 6 https://arxiv.org/pdf/1112.1368.pdf // modified to keep from crashing :) divisions replaced with multiplication :)
-      setLimits(8, 24, 1, 12, 1, 12, 2800, 4000);
+      setLimits(8, 12, 1, 12, 1, 12, 2912, 3056);
       result = t >> 4 |  t & (  ( t >> c ) / ( t >> b - ( t >> a ) & - t >> 7 - ( t >> 15 ) ) ) * 24;
       //       t >>4  | t &  (  ( t >> 5 ) / ( t >> 7 − ( t >> 15 ) & − t >> 7 − ( t >> 15 ) ) )
       break;
@@ -161,34 +161,33 @@ void rythmical(int pb1) {
       bb22_set(a, b);
       result =  ( bb22() - c ) * 128 ;
       break;
-    case 12: //  A bit borked
+    case 12: //  FINE sort of
       // Nightmachines https://forum.aemodular.com/post/235 ( t*4|t|t>>3&t+t/4&t*12|t*8>>10|t/20&t+140)&t>>4
       setLimits(3, 8, 8, 16, 20, 30, 2000, 4000);
       result  = ( (t * 4 | t | t >> a & t + t / 4 & t * 12 | t * 8 >> b | t / c & t + 140) & t >> 4 ) * 128; 
       // *128: &t>>4 caps at ~4095 (~6% full scale)
       break;
-    case 13: // BORKED
+    case 13: // BORKED slow
       // droid http://www.pouet.net/topic.php?which=8357&page=10#c388999
       setLimits(3, 8, 3, 8, 3, 8, 2000, 4000);
       result = t >> a & 1 ? t >> b : -t >> c;
       enc_offset = 4; // set speed :)
       break;
     case 14:  // FINE
-      // poetaster this is great with a modulator like the kastle.  belongs in musical
-      setLimits(2, 8, 2, 8, 2, 8, 2000, 4000);
+      setLimits(2, 8, 2, 8, 2, 8, 2000, 3000);
       result = ( ( t % 16 ? t >> a & t >> 7 : t >> 11 & t >> b ) * ( t % 8 ? ~t >> 9 & b : ~t >> 11 & c ) & 64 ) * 128; 
       // was &64 only (0/64) - *128 -> 0/8192; still a binary gate & silent at some settings
       break;
-    case 15:  // FINE move to melodic
+    case 15:  // FINE 
       // https://forum.arduino.cc/t/one-line-algorithmic-music/73409
       // (t*(4|t>>13&3)>>(~t>>11&1)&128|t*(t>>11&t>>13)*(~t>>9&3)&127)^(t&4096?(t*(t^t%255)|t>>4)>>1:t>>3|(t&8192?t<<2:t))
-      setLimits(1, 16, 1, 16, 1, 8, 2000, 4000);
+      setLimits(1, 16, 1, 16, 1, 8, 2000, 3000);
       result =  ( t & (a * 16) ? ( t * ( t ^ t % (b * 8) ) | t >> a ) >> 31 : t >> b | ( t & (c * 32) ? t << c : t ) )   ;
       break;
     case 16: // FINE 
       // started with vizmut paper pp. 6 https://arxiv.org/pdf/1112.1368.pdf
       // was (slow ~0.12Hz drone + harsh broadband, reads "thin/barely there"; the / term could divide by zero):
-      setLimits(1, 16, 1, 8, 1, 8, 2000, 4000);
+      setLimits(1, 16, 1, 8, 1, 8, 3000, 5000);
       result = t >> c | t | (( t >> 5 ) * ( t % 2 ? t >> b / 2 : t >> b)) | ( t % 3 ? t >> a / 3 : t >> a );
       break;
     case 17: // nice
@@ -205,7 +204,7 @@ void rythmical(int pb1) {
       result = 2 * (1 - (t + 10 >> (t >> a & t >> b)&t >> c & -2)) * ((t >> 10 ^ t + (t >> 6 & 127) >> 10) & 1) * 8192 + 4096;
       enc_offset = 2;
       break;
-    case 19: //FINE
+    case 19: //FINE move to noise
       // https://www.pouet.net/topic.php?post=589098
       setLimits(1, 11, 1, 11, 1, 11, 2000, 4000);
       result = t * (0xC298C298C298 >> (t >> a)&t >> b)&t >> c;
@@ -215,7 +214,7 @@ void rythmical(int pb1) {
       setLimits(1, 16, 1, 16, 0, 16, 2000, 4000);
       result = ( ~t >> 2) * ((127 & t * (b & t >> 10)) < (245 & t * (2 + (c & t >> a))));
       break;
-    case 21: // WELL move to noise
+    case 21: // FINE
       //  FIX rythm? Street Surfer by skurk, raer (2011-09-30) https://www.pouet.net/topic.php?which=8357&page=4#c388479
       setLimits(1, 16, 1, 16, 0, 16, 2000, 4000);
       result  = t & (4096) ? t / 2 * (t ^ t % (a << 1)) | t >> 5 : t / (a << 1) | (t & (b << 7) ? 4 * t : t) * 24;
@@ -274,12 +273,12 @@ void melodious(int pb2) {
       break;
     case 2: // FINE
       // wiretapped https://www.noisebridge.net/wiki/Bytebeat (1+(t>>10)%7)*(t*(1+(t>>13)%4)%(24+9*(t>>14)%8)&16)*10
-      setLimits(4, 16, 8, 32, 1, 64, 2000, 4000);
+      setLimits(4, 16, 8, 32, 1, 64, 2000, 5000);
       result = (1 + (t >> 10) % 7) * (t * (1 + (t >> a) % 4) % (b + 9 * (t >> c) % 8)) * (c * 5);
       break;
     case 3: // FINE
       // wiretapped, too u11*(t*(1|(t>>10-(t>>17)%4)%8)&(8<<(t>>13)%4)*(1|(t>>15)%8))*(t>>10)
-      setLimits(1, 10, 1, 8, 1, 16, 2000, 4000);
+      setLimits(1, 10, 1, 8, 1, 16, 2000, 5000);
       result = 11 * (t * (1 | (t >> a - (t >> 17) % b) % c) & (8 << (t >> 13) % b) * (1 | (t >> 15) % 8)) * (t >> 10);
       break;
     case 4:  // BORKED
@@ -288,84 +287,84 @@ void melodious(int pb2) {
       setLimits(1, 13, 1, 15, 1, 11, 2000, 4000);
       result = (t * (4 | t >> 13 & b ) >> ( ~t >> 11 & 1 ) & 128 | t * ( t >> a & t >> 13 ) * ( ~t >> c & 3 ) & 127 ) ^ ( t & 4096 ? ( t * ( t ^ t % 255 ) | t >> 4 ) >> 1 : t >> 3 | ( t & 8192 ? t << 2 : t ) );
       break;
-    case 5: // BORKED very glitchy
+    case 5: //FINE move to rythmic
       // glitch https://www.reddit.com/r/bytebeat/comments/ufvuio/electricity/ 12 / 16 / 12
-      setLimits(8, 24, 8, 32, 8, 24, 2000, 4000);
+      setLimits(8, 24, 8, 32, 8, 24, 3000, 3048);
       result = (t >> 12 & 3 ? ((t >> a) % ((t >> b) % 6 / (3 & t >> c) + 1) + 1) * t & -t >> 4 : ((t >> 1) % ((t >> b) % 6 / (3 & t >> a) + 1) + 1) * t & t); // +5E3/(t/4&4095);
       break;
     case 6: // FINE
       // variation on 45 MAKE this TWO
-      setLimits(0, 32, 0, 32, 0, 32, 2000, 4000); // aMin, aMax, etc
+      setLimits(0, 32, 0, 32, 0, 32, 3000, 4000); // aMin, aMax, etc
       result = ( ~t >> 2 ? ~t >> 3 : ~t >> 2) * ( (127 & t * ( b & t >> 10) ) < (245 & t * ( 2 + ( c & t >> a ) ) ) );
       enc_offset = 2;
       break;
     case 7: // FINE 
       // variation on 45 MAKE this ONE
-      setLimits(0, 32, 0, 32, 0, 32, 2000, 4000); // aMin, aMax, etc
+      setLimits(0, 32, 0, 32, 0, 32, 3000, 4000); // aMin, aMax, etc
       result = ( ~t >> 7 ? ~t >> 3 : ~t >> 4) * ( (245 & t * ( b & t >> 10) ) < (127 & t * ( 2 + ( c & t >> a ) ) ) );
       break;
-    case 8: // FINE 
+    case 8: // FINE  move to noise
       //t*(t>>9&10|t>>11&24^t>>10&15&t>>15) 
       //http://countercomplex.blogspot.com/2011/10/algorithmic-symphonies-from-one-line-of.html?showComment=1317761042403#c4044676811126652266
-      setLimits(1, 16, 1, 16, 1, 24, 2000, 4000); // aMin, aMax, etc
+      setLimits(1, 16, 1, 16, 1, 24, 3000, 4000); // aMin, aMax, etc
       result = t * (t >> a & 10 | t >> b & 24 ^ t >> 10 & c & t >> 15) * 32;
       break;
     case 9:  // FINE
       // poetaster long distorted carnival number
-      setLimits(1, 12, 1, 16, 1, 16, 2000, 4000);
+      setLimits(1, 12, 1, 16, 1, 16, 3000, 5000);
       result = (t * a & t >> b | t * c & t >> 7 | t * 3 & t / 1024) * 64;
       enc_offset = 3;
       break;
     // maybe also in rythmical?
     case 10:  // FINE
       // poetaster twisted calliope distortion can rock :)
-      setLimits(1, 30, 1, 15, 1, 15, 2000, 4000);
+      setLimits(1, 30, 1, 15, 1, 15, 3000, 5000);
       result = (  t * b & c / (a << 2) | t * b & t >> c | t * ( c + b ) & t >> a) * 64;
       enc_offset = 2;
       break;
     case 11: // FINE
       // base arps.  http://www.pouet.net/topic.php?which=8357&page=9#c388930",
-      setLimits(8, 16, 8, 16, 8, 16, 2000, 4000);
+      setLimits(8, 16, 8, 16, 8, 16, 2000, 3000);
       result =   ( t * ( ( a + ( 1 ^ t >> 10 & b ) ) * ( b + ( a & t >> 14 ) ) ) ) | ( t >> c  ) * 32;
       enc_offset = 1;
       break;
     case 12: // FINE
       // FIX rythm, broken poetaster fast to slow arps + staccato noise and robot voice = breaks with 9 o'clock, 5 to 12 o'clock, 3 o'clock
-      setLimits(0, 64, 0, 16, 0, 16, 2000, 4000);
+      setLimits(0, 64, 0, 16, 0, 16, 1000, 2000);
       result = (( t >> c | t << b ) & (a + 1))  * (( t >> (b + 1) ) | t >> ( t << 21)) ;
       break;
     case 13:  // FINE move to noise
       // poetaster pulse drone 
-      setLimits(1, 32, 1, 24, 16, 32, 2000, 4000);
+      setLimits(1, 32, 1, 24, 16, 32, 4000, 6000);
       result = ((t * a) & ( t >> 5 | t << 2 )  ) | ( (t * b) & ( t >> 4 | t << 3)) | ((t * c) & ( t >> 3 | t << 4 ) ) * 12 ;
       break;
     case 14:  //  move to noise
       // beyon http://countercomplex.blogspot.com/2011/10/algorithmic-symphonies-from-one-line-of.html?showComment=1318081308422#c4945456935852459432
-      setLimits(1, 16, 1, 32, 6, 12, 2000, 4000);
+      setLimits(1, 16, 1, 32, 6, 12, 2000, 3000);
       result = t >> 6 ^ t & 37 | t + (t ^ t >> a) - t * ((t % 24 ? 2 : 6)&t >> b)^t << 1 & (t & 598 ? t >> 4 : t >> c) * 128;
       break;
-    case 15: // FINE move to noise
+    case 15: // FINE 
       // poeaster variation with melodic with shells  variation on https://dollchan.net/btb/res/3.html#78
       // ( ( t >> 10 | t * 5 ) & ( t >> 8 | t * 4 ) & ( t >> 4 | t * 6 ) );
-      setLimits(0, 16, 1, 16, 8, 16, 2000, 4000);
+      setLimits(0, 16, 1, 16, 8, 16, 2000, 3000);
       result = ( ( t >> a | t * 5 ) & ( t >> ( a + 2 ) | t * b ) & ( t >> b | t * c ) ) * 32;
       enc_offset = 2;
       break;
     case 16: // FINE 
       // try * c? but nice and rockin the way it is.
-      setLimits(1, 68, 1, 68, 0, 32, 2000, 4000);
+      setLimits(1, 68, 1, 68, 0, 32, 2000, 3000);
       bb32_set(a, b);
       result = (bb32() | t >> c) * 128;
       enc_offset = 3;
       break;
     case 17: // FINE
-      setLimits(1, 64, 1, 64, 0, 32, 2000, 4000);
+      setLimits(1, 64, 1, 64, 0, 32, 2000, 3000);
       bb8_set(a, b);
       result = (bb8() | t >> c) * 128;
       break;
     case 18: // FINE
       // pad melodies 2 & 3 part with noise crackle on c
-      setLimits(1, 128, 1, 68, 0, 32, 2000, 4000);
+      setLimits(1, 128, 1, 68, 0, 32, 3024, 4000);
       bb35_set(a, b);
       result = (bb35() | t >> c) * 128;
       enc_offset = 2;
@@ -379,13 +378,13 @@ void melodious(int pb2) {
       break;
     case 20:  // BORKED
       // poetaster drone, organ, perc
-      setLimits(1, 8, 1, 16, 1, 8, 2000, 4000);
+      setLimits(1, 8, 1, 16, 1, 8, 4000, 8000);
       result = ( ( t * a & t >> 4 ) | ( t * b & t >> 7 ) | ( t * c &  t) ) - ( t >> b ? 13 : 8) * 32;
       enc_offset = 3;
       break;
     case 21: // FINE move to noise
       // http://entropedia.co.uk/generative_music/#v3b64K0otKS3KU9AoUdMosbMz09TWKLGx0QCxDQ014yAMY01tY03NGgjHRNXMBKQKxNTU1FTT0AUyTTU1rRX0tRRCihKTsxWcixLTSioVkioVAhJLcxQ8EitTixW09AE=
-      setLimits(1, 8, 11, 16, 1, 24, 2000, 4000);
+      setLimits(1, 8, 11, 16, 1, 24, 4000, 8000);
       result = (t & (t >> 6) + (t << ((t >> 11) ^ ((t >> b) + a)) | ((t >> c % 64) + (t >> c))) & (-t >> 5)) * 32;
       //result = (t&(t>>6)+(t<<((t>>11)^((t>>13)+3))|((t>>14%64)+(t>>14)))&(-t>>5));
       break;
@@ -398,13 +397,13 @@ case 22: // REALLY noisy
       break;
     case 23: // BORKED
       // t>>4|t*t*(t>>6&8^8)*(t>>11^t/3>>12)/(7+(t>>10&t>>14&3)) https://www.pouet.net/topic.php?post=401683
-      setLimits(11, 24, 8, 16, 8, 24, 2000, 4000);
+      setLimits(11, 24, 8, 16, 8, 24, 3072, 4000);
       result = t >> 4 | t * (t >> 6 & 8 ^ 8) * (t >> a ^ t / 3 >> 12) / (7 + (t >> b & t >> c & 3));
       //result =  t>>4|t*t*(t>>6&8^8)*(t>>11^t/3>>12)/(7+(t>>10&t>>14&3));
       break;
     case 24: // BORKED
       //https://www.pouet.net/ ((t>>6)&(t<<3)/(t*(t>>11)%(3+((t>>16)%22))))
-      setLimits(3, 9, 8, 16, 8, 16, 2000, 4000);
+      setLimits(3, 9, 8, 16, 8, 16, 2000, 3000);
       //result = ((t >> a) & (t << 3) / (t * (t >> 11) % (3 + ((t >> c) % (b * 11)))));
       result = ((t >> a) & (t << 3) / (t * (t >> b) % (3 + ((t >> 16) % c))));
       //result = ((t>>6)&(t<<3)/(t*(t>>11)%(3+((t>>16)%22))));
@@ -420,7 +419,7 @@ case 22: // REALLY noisy
     case 26: // FINE
       // abstract base arps
       //https://www.pouet.net/topic.php?post=401561
-      setLimits(1, 9, 1, 9, 9, 15, 2000, 4000);
+      setLimits(1, 9, 1, 9, 9, 15, 3088, 4000);
       //8*t*t*(t>>(t>>10)%3+15)/(3+(t>>10&(t>>15&3|4)))|t/16
       //result = 8*t*t*(t>>(t>>(a*10))%3+c)/(3+(t>>(a*10)&(t>>c&a|b)))|t/16;
       result = 8 * t * (t >> (t >> 10) % 3 + c) / (3 + (t >> 10 & (t >> c & a | b))) | t / 16 * 32;
@@ -440,7 +439,7 @@ case 22: // REALLY noisy
       // too quiet (sine amp only ~+/-43) - louder: result = ( pgm_read_byte(&sine256[Acc[0] >> 8]) + pgm_read_byte(&sine256[Acc[1] >> 8]) + pgm_read_byte(&sine256[Acc[2] >> 8]) ) / 3 * 128;
       break;
     case 28:
-      setLimits(0, 1023, 0, 1023, 0, 1023, 2000, 4000);
+      setLimits(0, 1023, 0, 1023, 0, 1023, 4000, 6000);
       tune = 404 - a;
       freq[0] = a * a ;
       freq[1] = (b + 64) * a;
@@ -503,55 +502,55 @@ void noisy(int pb3) {
   switch (pb3) {
     case 1: // FINE move to melodic
       // poetaster helicopters has some arps with b in the middle, various! can also humm with bells.
-      setLimits(8, 24, 1, 16, 1, 16, 2000, 4000);
+      setLimits(8, 24, 1, 16, 1, 16, 3000, 4000);
       result = ( (t >> a) - ( t >> a & t )  + ( t >> t &  b ) ) + ( t * ((t >> c) & c ) );
       break;
     case 2:  //FINE  move to rythmical
-      setLimits(1, 12, 1, 16, 1, 16, 2000, 4000);
+      setLimits(1, 12, 1, 16, 1, 16, 2000, 3000);
       result =  t >> ( ( a + 1 )  & b & t >> 8 ) ^ ( t & t >> a | t >> c ); /// maybe t >> 16?
       enc_offset = 3;
       break;
-    case 3:  //  A bit borked  but very noisy
+    case 3:  //  FINe move to noise
       // poetaster breaky, jungle stuff a at one oclock, c middle, etc
-      setLimits(1, 12, 1, 16, 1, 16, 2000, 4000);
+      setLimits(1, 12, 1, 16, 1, 16, 3000, 4000);
       result = a + ( ( t >> a + 1 ) ) * (t >> c | b | t >> ( t >> 16) )  * 12;
       break;
-    case 4:  // FINE move to melodic
+    case 4:  // FINE move to rythmic
       // poetaster techno stuff but slow it down and it's rockin
-      setLimits(6, 12, 1, 16, 6, 12, 2000, 4000);
+      setLimits(6, 12, 1, 16, 6, 12, 3000, 4000);
       result =  (t & t >> b | t << b >> c) ^ ( t  &  t >> a | t << a >> b) & ( t & t >> c | t << c >> a) * 12 ;
       break;
-    case 5:  // NOISE techno move to rythmical
+    case 5:  // FINE techno move to rythmical
       // poetaster counter point bleeps with a hihat or reverb stuff NAH at 2 times medlodic
-      setLimits(4, 16, 4, 16, 1, 8, 2000, 4000);
+      setLimits(4, 16, 4, 16, 1, 8, 2400, 3024);
       result =  ( t  &  t >> c | t + c << 4) | (t & t >> a | t + a << 3) ^ ( t & t >> b | t + b << 2 ) * 24;
       enc_offset = 2;
       break;
-    case 6: // FINE 
+    case 6: // FINE move to noise
       // // poetaster fx goes long not like th original nice variety http://www.pouet.net/topic.php?which=8357&page=17#c389829",
       // (t*(t>>12)*64+(t>>1)*(t>>10)*(t>>11)*48)>>(((t>>16)|(t>>17))&1
-      setLimits(1, 30, 1, 15, 1, 15, 2000, 4000);
+      setLimits(1, 16, 1, 16, 1, 16, 3000, 4000);
       result = ( t * (t >> c) * 64 + ( t >> 1 ) * ( t >> b ) * (t >> 7) * 48 ) >> ( ( (t >> 16) | (t >> a) ) + 1) * 12;
       break;
-    case 7:  // FINE move to melodic
+    case 7:  // FINE move to rythmic
       // poetaster c high, techno wheep, b pitch in the middle, a patterned blips fast to slow
-      setLimits(1, 24, 1, 12, 1, 16, 2000, 4000);
+      setLimits(1, 24, 1, 12, 1, 16, 3000, 5000);
       result =  t * ( t >> b & ( t >> b ? 13 : 8)  ) - t >> c ^ t & 21 | t + (t ^ t >> a)  ^ t << 1 & (t & a ? t >> 5 : t >> 3);
       break;
-    case 8:  // FINE
+    case 8:  // FINE move to  noise
       // poetaster descending / ascending bleep arps, lasers, a high bass run
-      setLimits(1, 24, 1, 12, 1, 16, 2000, 4000);
+      setLimits(1, 24, 1, 12, 1, 16, 2000, 3000);
       result = t - ((t & ((t >> a))) + ( a | t >> c )) & (t >> ( c + 1)) | (t >> b) & (t * (t >> a)) * 8;
       break;
     case 9:  // FINE belongs in rythmic
       // poetaster also a drone, but melodic basic with perc blurbs hh hits goes to techno with 3 part development
-      setLimits(4, 16, 3, 16, 32, 96, 2000, 4000);
+      setLimits(1, 16, 1, 16, 16, 96, 4000, 6000);
       result =  ( t >> a | t - b ) & ( t - a | t >> b ) * c;
       enc_offset = 3;
       break;
     case 10:   // FINE move melodic
       // started with vizmut paper pp. 5 https://arxiv.org/pdf/1112.1368.pdf = hacked to bits :)
-      setLimits(2, 32, 2, 32, 2, 10, 2000, 4000);
+      setLimits(2, 32, 2, 32, 2, 7, 2000, 3000);
       result = t - b & ( ( t >> a | t >> b ) ) ^ t - c & ( ( t >> b | t << c * 2 ) ) ^ t - a & ( ( t >> c | t >> 3 ) ) ;
       enc_offset = 2;
       break;
@@ -563,8 +562,8 @@ void noisy(int pb3) {
       //result = (int)(t/1e7 * t * t + c ) % 127 | t >> c ^ t >> b | t % 127 + ( t >> a ) | t ;
       break;
     // the bb funcs are from nyblybyte.h
-    case 12:  // FINE
-      setLimits(1, 68, 1, 68, 0, 32, 2000, 4000);
+    case 12:  // FINE move to rythmical
+      setLimits(1, 68, 1, 68, 0, 32, 2000, 3000);
       bb19_set( a, b);
       result = (bb19() | t >> c) * 128;
       break;
@@ -576,16 +575,16 @@ void noisy(int pb3) {
       break;
     case 14: //FINE move to melodic
       // yeah, it's nice and evolves a lot :)
-      setLimits(1, 68, 1, 68, 0, 32, 2000, 4000);
+      setLimits(1, 68, 1, 68, 0, 32, 3056, 3520);
       bb17_set(a, b);
       result = (bb17() | t >> c) * 128;
       break;
     case 15: // FINE
       // no needs 8000 hz and takes a while 
-      setLimits(1, 16, 1, 16, 0, 32, 2000, 4000);
+      setLimits(1, 16, 1, 16, 0, 32, 3056, 4000);
       bb23_set(a, b);
       //result =  bb23() - c;
-      result = (bb23() - c) * 128;
+      result = (bb23() | t >> c ) * 128;
       break;
     case 16:// ?? borked
       setLimits(1, 16, 1, 16, 0, 16, 2000, 4000);
@@ -595,26 +594,26 @@ void noisy(int pb3) {
       break;
     case 17: // FINE move to melodic
       // rythm bit //https://www.blogger.com/profile/02935728280207314233
-      setLimits(4, 16, 2, 16, 2, 16, 2000, 4000);
+      setLimits(4, 16, 2, 16, 2, 16, 2000, 3000);
       result = ((t < 16384) ? (t * a & t * 2 >> b) : (t < 32768) ? (t * a & t * 2 >> c) : (t < 49152) ? (t * (b)&t * 2 >> a) : (t < 65536) ? (t * (b)&t * 2 >> c) : 0 ) * 32;
       if (t >= 65536)t = 0;
       enc_offset = 1;
       break;
     case 18:  // BORKED 
       // poetaster a synth lead with breaks, and stuff :) c 12 oclock and it starts being a wave form
-      setLimits(1, 16, 1, 32, 0, 16, 2000, 4000);
+      setLimits(1, 16, 1, 32, 0, 16, 2000, 3000);
       result = (t >> 3 ? b : a) * t >> c ^ t % c | t + (t ^ t >> a) * c;
       enc_offset = 2;
       break;
     case 19:  // FINE  move to rythmic
       // poetaster mad techno helicopter bird flock this is an evil hack.
-      setLimits(1, 16, 1, 16, 0, 16, 2000, 4000);
+      setLimits(1, 16, 1, 16, 0, 16, 2000, 3000);
       result =    ( t / ( a * b ) ) & ( ( t >> a ) & t >> b ) * ( t << c) + a ^ ( t >> (t / b ) ) ;//^ ( t >> ( 16 * c ) ) ;
       enc_offset = 2;
       break;
-    case 20:  // FINE  if very slow it's melodic
+    case 20:  // FINE  move to melodic
       // poetaster can do techno ! it's great when you find it ;)
-      setLimits(0, 15, 0, 11, 0, 9, 2000, 4000);
+      setLimits(0, 15, 0, 11, 0, 9, 2000, 3000);
       result = ( ( (t >> 9 ? a : b) & t * (t >> b) % (t >> c) - (t >> b) ) * (t >> a) ) ;
       break;
 
@@ -627,20 +626,20 @@ void nybly(int pb4) {
 
   switch (pb4) {
     case 1: // BORKED
-      setLimits(1, 228, 1, 228, 2, 16, 2000, 4000);
+      setLimits(1, 228, 1, 228, 2, 16, 2000, 2392);
       bb0_set(a, b);
       result =  ( bb0() & t >> c ) * 128;
       break;
 
     case 2: // FINE move to melodic
-      setLimits(1, 228, 1, 228, 2, 8, 2000, 4000);
+      setLimits(1, 228, 1, 228, 2, 8, 3000, 4000);
       //SRATE = 4072;
       bb1_set(a, b);
       result =  ( bb1() & t >> c ) * 128;
       break;
 
-    case 3: // FINE move to noise
-      setLimits(1, 228, 1, 228, 2, 8, 2000, 4000);
+    case 3: // FINE move to rythmical
+      setLimits(1, 228, 1, 228, 2, 8, 3056, 4000);
       //SRATE = 4072;
       bb2_set(a, b);
       result =  ( bb2() & t >> c ) * 128;
@@ -654,80 +653,70 @@ void nybly(int pb4) {
       break;
 
     case 5: // FINE belongs in  rythmic
-      setLimits(1, 228, 1, 228, 2, 8, 2000, 4000);
-      //SRATE = 2408;
+      setLimits(1, 228, 1, 228, 2, 8, 3056, 4000);
       bb4_set(a, b);
       result =  ( bb4() & t >> c ) * 128;
       break;
-    case 6: //  BORKED
-      setLimits(1, 228, 1, 228, 1, 8, 2000, 4000);
-      //SRATE = 3176;
+    case 6: //  FINE to melodic
+      setLimits(1, 228, 1, 228, 1, 8, 2616, 3000);
       bb5_set(a, b);
       result =  ( bb5() & t >> c ) * 128;
       break;
     case 7: // BORKED belongs in noise has long pauses
       setLimits(1, 228, 1, 228, 1, 8, 2000, 4000);
-      //SRATE = 4712;
       bb6_set(a, b);
       result =  ( bb6() & t >> c ) * 128; 
       break;
     case 8: // BORKED move to melodic
       setLimits(1, 228, 1, 228, 1, 8, 2000, 4000);
-      //SRATE = 3304;
       bb7_set(a, b);
       result =  ( bb7() & t >> c ) * 128; 
       break;
-    case 9: // FINE move to melodic
-      setLimits(1, 228, 1, 228, 1, 8, 2000, 4000);
-      //SRATE = 6248;
+    case 9: // FINE move to melodic TECHNO
+      setLimits(1, 228, 1, 228, 1, 8, 2000, 3000);
       bb8_set(a, b);
       result =  ( bb8() & t >> c ) * 128; 
       break;
-    case 10: // FINE move to melodic
-      setLimits(1, 228, 1, 228, 1, 8, 2000, 4000);
-      //SRATE = 6248;
+    case 10: // FINE move to rythmical
+      setLimits(1, 228, 1, 228, 1, 8, 2000, 3000);
       bb9_set(a, b);
       result =  ( bb9() & t >> c ) * 128; 
       break;
     case 11: // FINE move to melodic
-      setLimits(1, 228, 1, 228, 1, 8, 2000, 4000);
-      //SRATE = 4200;
+      setLimits(1, 228, 1, 228, 1, 8, 2000, 3000);
       bb10_set(a, b);
       result =  ( bb10() & t >> c ) * 128; 
       break;
     case 12: // FINE, move to melodic
-      setLimits(1, 228, 1, 228, 1, 8, 2000, 4000);
-      //SRATE = 4200;
+      setLimits(1, 228, 1, 228, 1, 8, 2000, 3000);
       bb11_set(a, b);
       result =  ( bb11() & t >> c ) * 128; 
       break;
     case 13: // FINE, belongs to the noise
-      setLimits(1, 228, 1, 228, 1, 8, 2000, 4000);
-      //SRATE = 4200;
+      setLimits(1, 228, 1, 228, 1, 8, 3000, 4000);
       bb12_set(a, b);
       result =  ( bb12() & t >> c ) * 128; 
       break;
     case 14: // FINE, move to rythmic
-      setLimits(1, 228, 1, 228, 1, 8, 2000, 4000);
+      setLimits(1, 228, 1, 228, 1, 8, 2300, 3000);
       //SRATE = 6120;
       bb13_set(a, b);
       result =  ( bb13() & t >> c ) * 128; 
       break;
-    case 15: // FINE belongs to  rythmic
-      setLimits(1, 228, 1, 228, 1, 8, 2000, 4000);
+    case 15: // FINE belongs to melodic
+      setLimits(1, 228, 1, 228, 1, 8, 3000, 4000);
       //SRATE = 2536;
       bb14_set(a, b);
       result =  ( bb14() & t >> c ) * 128; 
       break;
     case 16: // FINE move to rythmic
-      setLimits(1, 228, 1, 228, 1, 8, 2000, 4000);
+      setLimits(1, 228, 1, 228, 1, 8, 2000, 3048);
       //SRATE = 3176;
       bb15_set(a, b);
       result =  ( bb15() & t >> c ) * 128; 
       break;
     case 17: // FINE move to melodic
-      setLimits(1, 228, 1, 228, 1, 8, 2000, 4000);
-      //SRATE = 4584;
+      setLimits(1, 228, 1, 228, 1, 8, 3056, 4000);
       bb16_set(a, b);
       result =  ( bb16() & t >> c ) * 128; 
       break;
